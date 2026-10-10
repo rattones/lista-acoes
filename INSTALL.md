@@ -26,6 +26,15 @@ cp frontend/.env-example frontend/.env
 
 Arquivos `.env` nunca são versionados; somente os `.env-example`.
 
+No backend, `CORS_ORIGENS` é obrigatória: sem ela a API não inicia.
+
+## Executar a API em desenvolvimento
+
+```sh
+npm run dev -w backend
+curl http://localhost:3000/v1/health
+```
+
 ## Portas (DEV)
 
 | Serviço      | Porta |
