@@ -1,0 +1,28 @@
+{
+  "name": "lista-acoes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Gerenciador de ações: API, app e landing page",
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "test": "npm run test:estrutura && npm test --workspaces --if-present",
+    "test:estrutura": "node --test infra/scripts/estrutura.test.mjs",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  }
+}

@@ -1,0 +1,29 @@
+# VSCode folders
+.vscode
+
+# project IA folders
+CLAUDE.md
+.context
+.skill
+
+# dependências
+node_modules/
+
+# credentials (somente os exemplos são versionados)
+.env
+.env.*
+!.env-example
+
+# bancos SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# builds e relatórios
+dist/
+build/
+coverage/
+
+# logs
+*.log
