@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 import prettier from 'eslint-config-prettier';
 import babelParser from '@babel/eslint-parser';
+import pluginVue from 'eslint-plugin-vue';
 
 export default [
   {
@@ -32,6 +33,12 @@ export default [
   {
     files: ['backend/babel.config.js'],
     languageOptions: { sourceType: 'commonjs' },
+  },
+  // Frontend: Vue 3 (app) e landing page, executados no navegador.
+  ...pluginVue.configs['flat/recommended'],
+  {
+    files: ['frontend/app/**/*.{js,vue}', 'frontend/landing/**/*.js', 'frontend/test/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
   },
   prettier,
 ];
