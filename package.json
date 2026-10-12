@@ -16,7 +16,8 @@
     "test": "npm run test:estrutura && npm test --workspaces --if-present",
     "test:estrutura": "node --test infra/scripts/estrutura.test.mjs",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "smoke:dev": "node --test infra/scripts/smoke-dev.mjs"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.29.9",

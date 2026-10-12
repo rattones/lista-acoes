@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/build
+**/coverage
+.git
+.env
+**/.env
+**/.env.*
+!**/.env-example
+*.db
+*.db-*
+*.log

@@ -1,0 +1,70 @@
+# Ambiente DEV no servidor casa-ratton (tarefa 004).
+# Uso (na raiz do repositório):
+#   docker compose -f infra/docker-compose.dev.yml up --build
+# Acesso: casa-ratton.local (interno) e casaratton.ddns.net (externo).
+#   API 3000 · app 8080 · landing 8081
+# A API fica exposta à internet: somente dados de teste, nunca credenciais de produção.
+name: lista-acoes-dev
+
+x-node: &node
+  build:
+    context: ..
+    dockerfile: infra/docker/dev.Dockerfile
+  image: lista-acoes-dev
+  init: true
+  restart: unless-stopped
+
+services:
+  backend:
+    <<: *node
+    command: npm run dev -w backend
+    ports:
+      - '3000:3000'
+    env_file:
+      - path: ../backend/.env
+        required: false
+    # Sobrescrevem o backend/.env (opcional, ex.: LOG_LEVEL).
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      CORS_ORIGENS: http://casa-ratton.local:8080,http://casaratton.ddns.net:8080,http://localhost:8080
+    volumes:
+      - ../backend/src:/app/backend/src
+      - ../backend/babel.config.js:/app/backend/babel.config.js:ro
+      - dados:/app/backend/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+
+  # App (8080) e landing page (8081) no mesmo container, como em PROD.
+  frontend:
+    <<: *node
+    command: sh -c 'npm run dev -w frontend & npm run dev:landing -w frontend & wait'
+    ports:
+      - '8080:8080'
+      - '8081:8081'
+    environment:
+      # Vazia: o app chama a API pela mesma origem (/v1) e o Vite encaminha para o backend.
+      # Assim funciona tanto em casa-ratton.local quanto em casaratton.ddns.net.
+      VITE_API_URL: ''
+      API_PROXY: http://backend:3000
+      VITE_APP_URL: http://casaratton.ddns.net:8080
+      HOSTS_PERMITIDOS: casa-ratton.local,casaratton.ddns.net
+    volumes:
+      - ../frontend/app:/app/frontend/app
+      - ../frontend/landing:/app/frontend/landing
+      - ../frontend/vite.base.config.js:/app/frontend/vite.base.config.js:ro
+      - ../frontend/vite.app.config.js:/app/frontend/vite.app.config.js:ro
+      - ../frontend/vite.landing.config.js:/app/frontend/vite.landing.config.js:ro
+    depends_on:
+      - backend
+
+volumes:
+  # Arquivo SQLite do DEV; sobrevive a `down` (só `down -v` apaga).
+  dados:
