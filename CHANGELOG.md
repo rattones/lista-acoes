@@ -11,6 +11,12 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Stack de PROD em `infra/docker-compose.prod.yml`: `proxy` (Nginx, único com porta publicada, `PROXY_PORTA`, padrão 80), `backend` e `frontend` na rede interna, com `restart: unless-stopped`, healthchecks e volume persistente do SQLite (tarefa 005).
+- Dockerfiles de produção multi-stage: `infra/docker/backend.Dockerfile` (Node 24 slim, só dependências de produção, sem root) e `infra/docker/frontend.Dockerfile` (build do Vite servido por `nginx-unprivileged`) (tarefa 005).
+- Proxy Nginx (`infra/nginx/proxy.conf`) com roteamento por subdomínio (`api.`, `app.`, `www.` e raiz), `444` para hosts desconhecidos, gzip, cabeçalhos de segurança, CSP por host e `X-Request-Id` repassado à API (tarefa 005).
+- Nginx do frontend (`infra/nginx/frontend.conf`) com fallback da SPA para o `index.html` e cache longo nos assets com hash (tarefa 005).
+- `infra/.env-example` com as variáveis do compose de PROD (tarefa 005).
+- Smoke test de PROD (`npm run smoke:prod`, `infra/scripts/smoke-prod.mjs`): `nginx -t`, portas publicadas, os três hosts, fallback da SPA, cabeçalhos, gzip e cache (tarefa 005).
 - Ambiente DEV com Docker em `infra/docker-compose.dev.yml`: `backend` (API, porta 3000) e `frontend` (app 8080 e landing 8081 no mesmo container), com hot reload por volumes montados (tarefa 004).
 - Imagem de desenvolvimento `infra/docker/dev.Dockerfile` (Node 24, usuário `node`, dependências na imagem) e `.dockerignore` (tarefa 004).
 - Volume nomeado `dados` para o arquivo SQLite em `backend/data` (tarefa 004).

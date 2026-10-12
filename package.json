@@ -17,7 +17,8 @@
     "test:estrutura": "node --test infra/scripts/estrutura.test.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "smoke:dev": "node --test infra/scripts/smoke-dev.mjs"
+    "smoke:dev": "node --test infra/scripts/smoke-dev.mjs",
+    "smoke:prod": "node --test infra/scripts/smoke-prod.mjs"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.29.9",
