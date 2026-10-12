@@ -43,4 +43,26 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 - **Logs:** JSON (pino), com request id em cada linha; o `x-request-id` recebido é reaproveitado ou gerado e devolvido na resposta.
 - **CORS:** liberado somente para as origens em `CORS_ORIGENS`.
 
+## Frontend (app e landing page)
+
+Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com builds separados, cada um servido pelo seu host:
+
+| Alvo      | Código              | Build          | Porta (DEV) | Host                     |
+| --------- | ------------------- | -------------- | ----------- | ------------------------ |
+| App (SPA) | `frontend/app/`     | `dist/app`     | 8080        | `app.listadecompras.net` |
+| Landing   | `frontend/landing/` | `dist/landing` | 8081        | `www.listadecompras.net` |
+
+| Comando                           | O que faz                                  |
+| --------------------------------- | ------------------------------------------ |
+| `npm run dev -w frontend`         | Sobe o app com recarga automática          |
+| `npm run dev:landing -w frontend` | Sobe a landing page com recarga automática |
+| `npm test -w frontend`            | Testes (Vitest + Vue Test Utils)           |
+| `npm run build -w frontend`       | Gera `dist/app` e `dist/landing`           |
+| `npm run preview -w frontend`     | Serve o build do app                       |
+
+- **API:** o cliente em `app/src/api/cliente.js` usa `VITE_API_URL` como base; erros no formato `{ erro, mensagem, detalhes }` viram `ErroApi` (com `status`, `codigo`, `message` e `detalhes`).
+- **Rotas:** `/` (início) e 404 para qualquer rota desconhecida, mantendo o endereço digitado. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
+- **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
+- **Landing page:** o link "Acessar o app" usa `VITE_APP_URL` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro: usuários entram por convite.
+
 Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
