@@ -11,6 +11,14 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Ambiente DEV com Docker em `infra/docker-compose.dev.yml`: `backend` (API, porta 3000) e `frontend` (app 8080 e landing 8081 no mesmo container), com hot reload por volumes montados (tarefa 004).
+- Imagem de desenvolvimento `infra/docker/dev.Dockerfile` (Node 24, usuário `node`, dependências na imagem) e `.dockerignore` (tarefa 004).
+- Volume nomeado `dados` para o arquivo SQLite em `backend/data` (tarefa 004).
+- Proxy `/v1` do Vite para a API (`API_PROXY`): em DEV, o app chama a API pela mesma origem e funciona em `casa-ratton.local` e `casaratton.ddns.net` (tarefa 004).
+- `HOSTS_PERMITIDOS`: hostnames aceitos pelo servidor do Vite além de localhost (tarefa 004).
+- Smoke test do DEV (`npm run smoke:dev`, `infra/scripts/smoke-dev.mjs`): health da API, app, landing, proxy, hostnames e CORS (tarefa 004).
+- Script `infra/scripts/firewall-dev.sh` para abrir as portas 3000, 8080 e 8081 no ufw (tarefa 004).
+
 - Frontend em `frontend/` com Vue 3, Vite, Vuetify 4, Pinia e Vue Router, em JavaScript (tarefa 003).
 - Dois pontos de entrada com builds separados: `app` (SPA, porta 8080) e `landing` (página estática, porta 8081), gerando `dist/app` e `dist/landing` (tarefa 003).
 - Layout do app com barra superior e alternância de tema claro/escuro (padrão segue a preferência do sistema) (tarefa 003).

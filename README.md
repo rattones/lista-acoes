@@ -14,13 +14,14 @@ Monorepo com npm workspaces:
 
 ## Comandos (na raiz)
 
-| Comando          | O que faz                                                              |
-| ---------------- | ---------------------------------------------------------------------- |
-| `npm install`    | Instala as dependências da raiz e dos workspaces                       |
-| `npm test`       | Verifica a estrutura do repositório e roda os testes de cada workspace |
-| `npm run lint`   | ESLint e verificação de formatação do Prettier                         |
-| `npm run format` | Formata os arquivos com o Prettier                                     |
-| `npm run dev`    | Sobe o ambiente de desenvolvimento de cada workspace                   |
+| Comando             | O que faz                                                              |
+| ------------------- | ---------------------------------------------------------------------- |
+| `npm install`       | Instala as dependências da raiz e dos workspaces                       |
+| `npm test`          | Verifica a estrutura do repositório e roda os testes de cada workspace |
+| `npm run lint`      | ESLint e verificação de formatação do Prettier                         |
+| `npm run format`    | Formata os arquivos com o Prettier                                     |
+| `npm run dev`       | Sobe o ambiente de desenvolvimento de cada workspace                   |
+| `npm run smoke:dev` | Smoke test do ambiente DEV no Docker (containers no ar)                |
 
 ## Backend (API)
 
@@ -64,5 +65,9 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Rotas:** `/` (início) e 404 para qualquer rota desconhecida, mantendo o endereço digitado. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
 - **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
 - **Landing page:** o link "Acessar o app" usa `VITE_APP_URL` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro: usuários entram por convite.
+
+## Ambiente DEV (Docker)
+
+`docker compose -f infra/docker-compose.dev.yml up -d --build` sobe a API (3000), o app (8080) e a landing page (8081) no servidor casa-ratton, com hot reload. `npm run smoke:dev` verifica se tudo responde. Detalhes, hostnames e firewall estão no [INSTALL.md](INSTALL.md#ambiente-dev-com-docker-servidor-casa-ratton).
 
 Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
