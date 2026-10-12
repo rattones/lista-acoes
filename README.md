@@ -70,4 +70,8 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
 `docker compose -f infra/docker-compose.dev.yml up -d --build` sobe a API (3000), o app (8080) e a landing page (8081) no servidor casa-ratton, com hot reload. `npm run smoke:dev` verifica se tudo responde. Detalhes, hostnames e firewall estão no [INSTALL.md](INSTALL.md#ambiente-dev-com-docker-servidor-casa-ratton).
 
+## Produção (Docker + Nginx)
+
+`docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (porta 80), a API e o frontend. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. `npm run smoke:prod` testa os três hosts. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
+
 Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
