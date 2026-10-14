@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { load as lerYaml, YAML11_SCHEMA } from 'js-yaml';
 
 const raiz = join(import.meta.dirname, '..', '..');
 const lerJson = (arquivo) => JSON.parse(readFileSync(join(raiz, arquivo), 'utf8'));
@@ -130,30 +131,14 @@ test('POLICY cobre dados coletados, logs, e-mail, exclusão e direitos do titula
 });
 
 // Rotação dos logs dos containers (tarefa 029): todo serviço dos composes tem tamanho máximo.
-const configCompose = (arquivo, ...extras) =>
-  JSON.parse(
-    execFileSync(
-      'docker',
-      [
-        'compose',
-        '-f',
-        join(raiz, 'infra', arquivo),
-        ...extras,
-        'config',
-        '--no-env-resolution',
-        '--format',
-        'json',
-      ],
-      { cwd: raiz, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ),
-  );
+// Lido direto do YAML, sem depender do Docker nem do backend/.env, que o compose exige.
+// O schema YAML 1.1 resolve as chaves de mesclagem (`<<: *node`), como o Compose.
+const configCompose = (arquivo) =>
+  lerYaml(readFileSync(join(raiz, 'infra', arquivo), 'utf8'), { schema: YAML11_SCHEMA });
 
-for (const [arquivo, extras] of [
-  ['docker-compose.dev.yml', []],
-  ['docker-compose.prod.yml', ['--profile', 'teste']],
-]) {
+for (const arquivo of ['docker-compose.dev.yml', 'docker-compose.prod.yml']) {
   test(`${arquivo}: todo serviço tem rotação de log (json-file com max-size e max-file)`, () => {
-    const { services } = configCompose(arquivo, ...extras);
+    const { services } = configCompose(arquivo);
     for (const [nome, servico] of Object.entries(services)) {
       assert.equal(servico.logging?.driver, 'json-file', `${nome}: driver de log`);
       assert.match(servico.logging?.options?.['max-size'] ?? '', /^\d+m$/, `${nome}: max-size`);

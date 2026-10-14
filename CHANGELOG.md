@@ -16,6 +16,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 - Todas as rotas do CRUD passam a exigir autenticação; `GET /v1/health` continua público (tarefa 012).
 - `backend/.env` passa a ser obrigatório nos composes de DEV e PROD (guarda o `JWT_SEGREDO`); o CI gera um segredo descartável para o smoke de PROD (tarefa 012).
 - CORS com `credentials: true` (o app envia o cookie do refresh) e `trust proxy` configurável (tarefa 012).
+- O teste de rotação dos logs lê os composes com `js-yaml` (schema YAML 1.1, que resolve `<<`), sem depender da versão do Docker nem do `backend/.env` (tarefa 012).
 - `@nestjs/jwt` fixado na 11.x: a 12 é só ESM e não carrega no Jest (CommonJS via Babel) (tarefa 012).
 - POLICY descreve a retenção dos logs (até 50 MB por serviço) e que credenciais não são gravadas; INSTALL orienta recriar os containers do DEV depois de um `git pull` (arquivos montados um a um não acompanham o git) (tarefa 029).
 - Decorators de parâmetro (`@Body()`, `@Query()`, `@Param()`, `@Inject()` no construtor) passam a ser convertidos por um plugin local no `backend/babel.config.js`, no formato do `__param` do TypeScript (tarefa 011).
