@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { validarConfig } from './config/configuracao';
+import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health/health.controller';
 
 const REQUEST_ID_VALIDO = /^[\w-]{1,100}$/;
@@ -28,6 +29,7 @@ function gerarRequestId(req, res) {
         pinoHttp: { level: config.get('LOG_LEVEL'), genReqId: gerarRequestId },
       }),
     }),
+    DatabaseModule,
   ],
   controllers: [HealthController],
 })

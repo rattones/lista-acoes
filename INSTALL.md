@@ -28,6 +28,19 @@ Arquivos `.env` nunca são versionados; somente os `.env-example`.
 
 No backend, `CORS_ORIGENS` é obrigatória: sem ela a API não inicia.
 
+## Banco de dados (migrations)
+
+O banco é um arquivo SQLite em `DB_ARQUIVO` (padrão `backend/data/monitor.db`; a pasta é criada se não existir). As tabelas vêm das migrations em `backend/migrations/`, que **não** são aplicadas pela API ao iniciar:
+
+```sh
+npm run db:status -w backend    # aplicadas (com a data) e pendentes
+npm run db:migrate -w backend   # aplica as pendentes, em ordem
+```
+
+Os comandos leem `DB_ARQUIVO` do ambiente ou do `backend/.env`. Rodar o `db:migrate` de novo sem migration nova não muda nada.
+
+Nova migration: crie `backend/migrations/NNNN_descricao.sql` com o próximo número (4 dígitos). Cada arquivo roda em uma transação, então não use `BEGIN`/`COMMIT` nele, nem `PRAGMA foreign_keys` (não tem efeito dentro de transação). Migration aplicada não deve ser editada: corrija com uma nova.
+
 ## Executar a API em desenvolvimento
 
 ```sh
@@ -73,7 +86,7 @@ docker compose -f infra/docker-compose.dev.yml down             # para (o banco 
 - **Dependências:** ficam dentro da imagem. Depois de mudar um `package.json`, rode o `up` com `--build`.
 - **Configuração:** as variáveis de DEV estão no `docker-compose.dev.yml`. O `backend/.env` é opcional e serve para ajustes, como `LOG_LEVEL`; as variáveis do compose têm precedência sobre ele.
 - **API no app:** em DEV, o app chama a API pela mesma origem (`/v1`), e o Vite encaminha para o container `backend` (`API_PROXY`). Assim, o app funciona pelos dois hostnames sem precisar de um build para cada um. A porta 3000 continua aberta para acesso direto, com CORS liberado para o app nos dois hostnames.
-- **Banco SQLite:** fica no volume nomeado `lista-acoes-dev_dados`, montado em `backend/data`. Ele sobrevive ao `down`; só o `down -v` apaga.
+- **Banco SQLite:** fica no volume nomeado `lista-acoes-dev_dados`, montado em `backend/data`. Ele sobrevive ao `down`; só o `down -v` apaga. As migrations (`backend/migrations`, montada no container) são aplicadas com `docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend` (e `db:status` para conferir).
 - **Smoke test:** `npm run smoke:dev` testa `localhost`; para outro host, use `SMOKE_HOST=casaratton.ddns.net npm run smoke:dev`.
 
 > **Risco aceito:** em DEV, a API fica exposta à internet. Use apenas dados de teste, nunca credenciais de produção.
@@ -167,6 +180,7 @@ Se a renovação falhar (o `verifica:https` acusa o vencimento próximo):
 
 - **Variáveis:** o Compose lê `infra/.env` sozinho. O `backend/.env` é opcional (segredos de etapas futuras); `NODE_ENV`, `PORT` e `CORS_ORIGENS` vêm do compose. As `VITE_*` são embutidas no build do frontend, então mudar o valor exige `up --build`.
 - **Imagens:** multi-stage. A API roda em `node:24-slim` com só as dependências de produção, e o frontend em `nginx-unprivileged`; os dois rodam sem root. O proxy usa a imagem oficial `nginx:alpine`: o processo mestre roda como root para ler a chave da Let's Encrypt e abrir as portas 80 e 443, e os workers rodam como `nginx`.
+- **Migrations:** vão dentro da imagem da API. Depois de cada `up --build` com migration nova, aplique com `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js migrate` (`... cli.js status` para conferir). Faça backup do volume antes.
 - **Volumes:** `lista-acoes_dados` guarda o SQLite e `lista-acoes_letsencrypt`, o certificado e a conta da Let's Encrypt. Os dois sobrevivem a `down` e a rebuilds; **não use `down -v`** em PROD.
 - **Nginx:** `infra/nginx/proxy.conf` (subdomínios, TLS, redirect, gzip, cabeçalhos de segurança e HSTS, CSP, `X-Request-Id` repassado à API) e `infra/nginx/frontend.conf` (fallback da SPA para o `index.html`, cache longo nos assets com hash e `no-cache` no `index.html`). Depois de alterar a config do proxy: `docker compose -f infra/docker-compose.prod.yml exec proxy nginx -t` e depois `... exec proxy nginx -s reload`.
 - **Healthchecks e restart:** todos os serviços têm `restart: unless-stopped`, e `proxy`, `backend` e `frontend` têm healthcheck. O proxy só sobe depois que a API e o frontend estão saudáveis, e consulta o DNS do Docker a cada 10 s, acompanhando a troca de IP quando um container é recriado.

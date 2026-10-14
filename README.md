@@ -29,12 +29,14 @@ Monorepo com npm workspaces:
 
 NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo `/v1`.
 
-| Comando                    | O que faz                                        |
-| -------------------------- | ------------------------------------------------ |
-| `npm run dev -w backend`   | Sobe a API com recarga automática (porta `PORT`) |
-| `npm test -w backend`      | Testes unitários e e2e (Jest + Supertest)        |
-| `npm run build -w backend` | Transpila `src/` para `dist/`                    |
-| `npm run start -w backend` | Executa a versão transpilada                     |
+| Comando                         | O que faz                                        |
+| ------------------------------- | ------------------------------------------------ |
+| `npm run dev -w backend`        | Sobe a API com recarga automática (porta `PORT`) |
+| `npm test -w backend`           | Testes unitários e e2e (Jest + Supertest)        |
+| `npm run build -w backend`      | Transpila `src/` para `dist/`                    |
+| `npm run start -w backend`      | Executa a versão transpilada                     |
+| `npm run db:migrate -w backend` | Aplica as migrations pendentes do banco          |
+| `npm run db:status -w backend`  | Lista as migrations aplicadas e pendentes        |
 
 | Rota             | Resposta                                |
 | ---------------- | --------------------------------------- |
@@ -45,6 +47,8 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 - **Configuração:** variáveis de ambiente validadas na inicialização; a API não sobe se faltar alguma obrigatória (ver `backend/.env-example`).
 - **Logs:** JSON (pino), com request id em cada linha; o `x-request-id` recebido é reaproveitado ou gerado e devolvido na resposta.
 - **CORS:** liberado somente para as origens em `CORS_ORIGENS`.
+- **Banco:** SQLite (better-sqlite3, SQL puro) no arquivo `DB_ARQUIVO` (padrão `data/monitor.db`). O `DatabaseModule` abre uma conexão única com `foreign_keys = ON`, `journal_mode = WAL` e `busy_timeout = 5000`, injetada com `@Dependencies(CONEXAO_DB)`, e a fecha quando a API encerra.
+- **Migrations:** arquivos `backend/migrations/NNNN_descricao.sql`, aplicados em ordem pelo `db:migrate`, cada um em uma transação e registrado em `schema_migrations (versao, nome, aplicada_em)`. Migration já registrada não roda de novo; se uma falhar, ela é desfeita e as seguintes não rodam. A API não aplica migrations ao iniciar.
 
 ## Frontend (app e landing page)
 

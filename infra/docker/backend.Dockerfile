@@ -7,7 +7,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
-RUN npm ci -w backend
+# --ignore-scripts: o better-sqlite3 traz o binário pronto (prebuilds/), mas o npm
+# tenta compilá-lo com node-gyp (sem Python na imagem slim). O backend não depende
+# de nenhum script de instalação.
+RUN npm ci -w backend --ignore-scripts
 COPY backend/ backend/
 RUN npm run build -w backend
 
@@ -21,9 +24,11 @@ USER node
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node backend/package.json backend/
 COPY --chown=node:node frontend/package.json frontend/
-RUN npm ci -w backend --omit=dev && npm cache clean --force
+RUN npm ci -w backend --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=build --chown=node:node /app/backend/dist backend/dist
+# Migrations do banco: node dist/database/cli.js migrate (tarefa 009).
+COPY --chown=node:node backend/migrations backend/migrations
 # Pasta do banco SQLite: recebe o volume persistente (já com o dono node).
 RUN mkdir -p backend/data
 
