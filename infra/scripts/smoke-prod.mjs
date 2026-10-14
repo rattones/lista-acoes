@@ -1,31 +1,41 @@
-// Smoke test da stack de PROD simulando os subdomínios (tarefa 005). Requer a stack no ar:
-//   PROXY_PORTA=8088 docker compose -f infra/docker-compose.prod.yml up -d --build
-//   PROXY_PORTA=8088 node --test infra/scripts/smoke-prod.mjs
-// PROXY_PORTA: porta do proxy no host (padrão: 80). SMOKE_HOST: host testado (padrão: localhost).
+// Smoke test da stack de PROD simulando os subdomínios (tarefas 005 e 006). Requer a stack no ar,
+// com um certificado (o autoassinado de teste serve: infra/scripts/certificado-teste.sh):
+//   PROXY_PORTA=8088 PROXY_PORTA_HTTPS=8444 docker compose -f infra/docker-compose.prod.yml up -d --build
+//   PROXY_PORTA=8088 PROXY_PORTA_HTTPS=8444 node --test infra/scripts/smoke-prod.mjs
+// PROXY_PORTA / PROXY_PORTA_HTTPS: portas do proxy no host (padrão: 80 / 443).
+// SMOKE_HOST: host testado (padrão: localhost). A validade do certificado não é verificada
+// aqui (em teste ele é autoassinado); em PROD use `npm run verifica:https`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { request } from 'node:http';
+import http from 'node:http';
+import https from 'node:https';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
 const HOST = process.env.SMOKE_HOST ?? 'localhost';
 const PORTA = Number(process.env.PROXY_PORTA ?? 80);
+const PORTA_HTTPS = Number(process.env.PROXY_PORTA_HTTPS ?? 443);
 const COMPOSE = ['compose', '-f', join(import.meta.dirname, '..', 'docker-compose.prod.yml')];
 const DOMINIO = 'listadecompras.net';
 
 const compose = (...args) =>
   execFileSync('docker', [...COMPOSE, ...args], { encoding: 'utf8', stdio: 'pipe' });
 
-// Requisição ao proxy com o cabeçalho Host do subdomínio simulado.
-function get(subdominio, caminho = '/', cabecalhos = {}) {
-  const hostHeader = subdominio ? `${subdominio}.${DOMINIO}` : DOMINIO;
+const nomeHost = (subdominio) => (subdominio ? `${subdominio}.${DOMINIO}` : DOMINIO);
+
+// Requisição ao proxy como se fosse ao subdomínio: Host (e SNI, no HTTPS) do subdomínio.
+function requisitar(seguro, hostHeader, caminho, cabecalhos = {}) {
+  const modulo = seguro ? https : http;
   return new Promise((resolve, reject) => {
-    const req = request(
+    const req = modulo.request(
       {
         host: HOST,
-        port: PORTA,
+        port: seguro ? PORTA_HTTPS : PORTA,
         path: caminho,
         headers: { host: hostHeader, ...cabecalhos },
+        servername: hostHeader,
+        rejectUnauthorized: false,
+        agent: false,
         timeout: 10_000,
       },
       (res) => {
@@ -41,6 +51,10 @@ function get(subdominio, caminho = '/', cabecalhos = {}) {
     req.end();
   });
 }
+
+const get = (subdominio, caminho = '/', cabecalhos = {}) =>
+  requisitar(true, nomeHost(subdominio), caminho, cabecalhos);
+const getHttp = (subdominio, caminho = '/') => requisitar(false, nomeHost(subdominio), caminho);
 
 const texto = (res) => res.corpo.toString('utf8');
 
@@ -59,7 +73,10 @@ test('somente o proxy publica porta no host', () => {
     ) ?? [];
   assert.equal(publicadas('backend').length, 0, 'backend publica porta');
   assert.equal(publicadas('frontend').length, 0, 'frontend publica porta');
-  assert.ok(publicadas('proxy').length > 0, 'proxy não publica porta');
+  assert.equal(publicadas('certbot').length, 0, 'certbot publica porta');
+  const portas = publicadas('proxy').map((p) => p.PublishedPort);
+  assert.ok(portas.includes(PORTA), `proxy não publica ${PORTA}`);
+  assert.ok(portas.includes(PORTA_HTTPS), `proxy não publica ${PORTA_HTTPS}`);
 });
 
 test('api. responde o health da API', async () => {
@@ -102,14 +119,75 @@ for (const subdominio of ['www', null]) {
   });
 }
 
-test('host desconhecido não é atendido', async () => {
-  const req = new Promise((resolve, reject) => {
-    const r = request({ host: HOST, port: PORTA, path: '/', headers: { host: 'outro.com' } });
-    r.on('response', (res) => resolve(res.statusCode));
-    r.on('error', reject);
-    r.end();
+test('host desconhecido não é atendido no HTTP', async () => {
+  await assert.rejects(requisitar(false, 'outro.com', '/'), /socket hang up|ECONNRESET/);
+});
+
+test('host desconhecido tem o handshake TLS recusado no HTTPS', async () => {
+  await assert.rejects(requisitar(true, 'outro.com', '/'), /alert|handshake|ECONNRESET|hang up/i);
+});
+
+for (const subdominio of ['api', 'app', 'www', null]) {
+  const nome = subdominio ? `${subdominio}.` : 'domínio raiz';
+  test(`${nome} redireciona o HTTP com 301 para o HTTPS`, async () => {
+    const res = await getHttp(subdominio, '/caminho?x=1');
+    assert.equal(res.status, 301);
+    assert.equal(res.headers.location, `https://${nomeHost(subdominio)}/caminho?x=1`);
   });
-  await assert.rejects(req, /socket hang up|ECONNRESET/);
+
+  test(`${nome} envia HSTS no HTTPS`, async () => {
+    const { headers } = await get(subdominio, subdominio === 'api' ? '/v1/health' : '/');
+    assert.equal(headers['strict-transport-security'], 'max-age=31536000; includeSubDomains');
+  });
+}
+
+test("desafio ACME da Let's Encrypt é servido no HTTP, sem redirect", async () => {
+  const token = `smoke-${Date.now()}`;
+  const arquivo = `/var/www/certbot/.well-known/acme-challenge/${token}`;
+  compose(
+    'exec',
+    '-T',
+    'certbot',
+    'sh',
+    '-c',
+    `mkdir -p "$(dirname ${arquivo})" && echo ${token} > ${arquivo}`,
+  );
+  try {
+    for (const subdominio of ['api', 'app', 'www', null]) {
+      const res = await getHttp(subdominio, `/.well-known/acme-challenge/${token}`);
+      assert.equal(res.status, 200, `${nomeHost(subdominio)}: ${res.status}`);
+      assert.equal(texto(res).trim(), token);
+    }
+  } finally {
+    compose('exec', '-T', 'certbot', 'rm', '-f', arquivo);
+  }
+});
+
+test('o certificado servido cobre os quatro nomes', async () => {
+  const certificado = await new Promise((resolve, reject) => {
+    const req = https.get(
+      {
+        host: HOST,
+        port: PORTA_HTTPS,
+        servername: `app.${DOMINIO}`,
+        rejectUnauthorized: false,
+        agent: false,
+      },
+      (res) => {
+        resolve(res.socket.getPeerCertificate());
+        res.resume();
+      },
+    );
+    req.on('error', reject);
+  });
+  for (const nome of ['api', 'app', 'www', null].map(nomeHost)) {
+    assert.match(certificado.subjectaltname, new RegExp(`DNS:${nome.replaceAll('.', '\\.')}(,|$)`));
+  }
+});
+
+test('serviço certbot está no ar para renovar o certificado', () => {
+  const estado = JSON.parse(compose('ps', '--format', 'json', 'certbot') || '{}');
+  assert.equal(estado.State, 'running');
 });
 
 for (const subdominio of ['api', 'app', 'www']) {
