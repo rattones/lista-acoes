@@ -28,7 +28,13 @@ cp frontend/.env-example frontend/.env
 
 Arquivos `.env` nunca são versionados; somente os `.env-example`.
 
-No backend, `CORS_ORIGENS` é obrigatória: sem ela a API não inicia.
+No backend, `CORS_ORIGENS` e `JWT_SEGREDO` são obrigatórias: sem elas a API não inicia. O `JWT_SEGREDO` assina os tokens de login (mínimo de 32 caracteres) e deve ser diferente em cada ambiente. Para gerar:
+
+```sh
+echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env
+```
+
+Trocar o segredo encerra todas as sessões abertas.
 
 ## Banco de dados (migrations)
 
@@ -95,7 +101,7 @@ docker compose -f infra/docker-compose.dev.yml down             # para (o banco 
 - **Hot reload:** o código (`backend/src`, `frontend/app`, `frontend/landing` e as configs do Vite) é montado nos containers. A API reinicia sozinha (nodemon) e o app atualiza no navegador (HMR do Vite). Arquivos montados um a um (`backend/babel.config.js` e as configs do Vite) não acompanham trocas feitas pelo git (checkout, pull, merge): o container continua vendo a versão antiga. Depois de um `git pull`, rode `docker compose -f infra/docker-compose.dev.yml up -d --force-recreate`.
 - **Logs:** `docker compose -f infra/docker-compose.dev.yml logs -f backend`. A rotação (5 arquivos de 10 MB por serviço) vale para containers criados depois da tarefa 029; recrie com `up -d` se necessário.
 - **Dependências:** ficam dentro da imagem. Depois de mudar um `package.json`, rode o `up` com `--build`.
-- **Configuração:** as variáveis de DEV estão no `docker-compose.dev.yml`. O `backend/.env` é opcional e serve para ajustes, como `LOG_LEVEL`; as variáveis do compose têm precedência sobre ele.
+- **Configuração:** as variáveis de DEV estão no `docker-compose.dev.yml`. O `backend/.env` é **obrigatório** (o compose não sobe sem ele) e guarda os segredos, como o `JWT_SEGREDO` (`echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env`), e ajustes como `LOG_LEVEL`; as variáveis do compose têm precedência sobre ele.
 - **API no app:** em DEV, o app chama a API pela mesma origem (`/v1`), e o Vite encaminha para o container `backend` (`API_PROXY`). Assim, o app funciona pelos dois hostnames sem precisar de um build para cada um. A porta 3000 continua aberta para acesso direto, com CORS liberado para o app nos dois hostnames.
 - **Banco SQLite:** fica no volume nomeado `lista-acoes-dev_dados`, montado em `backend/data`. Ele sobrevive ao `down`; só o `down -v` apaga. As migrations (`backend/migrations`, montada no container) são aplicadas com `docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend` (e `db:status` para conferir). O primeiro admin: `docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w backend -- --email <e-mail> --nome <nome>`.
 - **Smoke test:** `npm run smoke:dev` testa `localhost`; para outro host, use `SMOKE_HOST=casaratton.ddns.net npm run smoke:dev`.
@@ -144,6 +150,7 @@ Na raiz do repositório, na VPS:
 
 ```sh
 cp infra/.env-example infra/.env               # preencha LETSENCRYPT_EMAIL e revise o resto
+echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # segredo dos tokens (só de PROD)
 docker compose -f infra/docker-compose.prod.yml build
 
 # 1) Ensaio com o ambiente de testes da Let's Encrypt (certificado não confiável)
@@ -189,7 +196,7 @@ Se a renovação falhar (o `verifica:https` acusa o vencimento próximo):
 
 ### Operação
 
-- **Variáveis:** o Compose lê `infra/.env` sozinho. O `backend/.env` é opcional (segredos de etapas futuras); `NODE_ENV`, `PORT` e `CORS_ORIGENS` vêm do compose. As `VITE_*` são embutidas no build do frontend, então mudar o valor exige `up --build`.
+- **Variáveis:** o Compose lê `infra/.env` sozinho. O `backend/.env` é obrigatório e guarda os segredos da API (`JWT_SEGREDO`); `NODE_ENV`, `PORT`, `CORS_ORIGENS` e `CONFIAR_PROXY` vêm do compose. As `VITE_*` são embutidas no build do frontend, então mudar o valor exige `up --build`.
 - **Imagens:** multi-stage. A API roda em `node:24-slim` com só as dependências de produção, e o frontend em `nginx-unprivileged`; os dois rodam sem root. O proxy usa a imagem oficial `nginx:alpine`: o processo mestre roda como root para ler a chave da Let's Encrypt e abrir as portas 80 e 443, e os workers rodam como `nginx`.
 - **Migrations:** vão dentro da imagem da API. Depois de cada `up --build` com migration nova, aplique com `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js migrate` (`... cli.js status` para conferir). Faça backup do volume antes. Na primeira subida, crie o admin: `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js admin --email <e-mail> --nome <nome>`.
 - **Logs:** `docker compose -f infra/docker-compose.prod.yml logs <serviço>`. Todos os serviços usam rotação (`json-file`, 5 arquivos de 10 MB, até 50 MB por serviço); os mais antigos são descartados. A API não grava cabeçalhos da requisição, então credenciais não aparecem nos logs.

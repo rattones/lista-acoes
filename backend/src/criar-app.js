@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
@@ -13,7 +14,12 @@ export async function criarApp() {
   // Lotes de até 1000 itens dos agentes passam do limite padrão de 100 KB.
   app.useBodyParser('json', { limit: '1mb' });
   app.setGlobalPrefix('v1');
-  app.enableCors({ origin: app.get(ConfigService).get('CORS_ORIGENS') });
+  const config = app.get(ConfigService);
+  // Atrás do Nginx (PROD), o IP do cliente vem do X-Forwarded-For (rate limit do login).
+  app.set('trust proxy', config.get('CONFIAR_PROXY'));
+  app.use(cookieParser());
+  // credentials: o app (outra origem em PROD) envia o cookie do refresh token.
+  app.enableCors({ origin: config.get('CORS_ORIGENS'), credentials: true });
   app.useGlobalFilters(new FiltroErros(logger));
   return app;
 }

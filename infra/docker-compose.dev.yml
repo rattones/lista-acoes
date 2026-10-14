@@ -29,10 +29,11 @@ services:
     command: npm run dev -w backend
     ports:
       - '3000:3000'
+    # Obrigatório: segredos da API (JWT_SEGREDO). Veja backend/.env-example.
     env_file:
       - path: ../backend/.env
-        required: false
-    # Sobrescrevem o backend/.env (opcional, ex.: LOG_LEVEL).
+        required: true
+    # Sobrescrevem o backend/.env.
     environment:
       NODE_ENV: development
       PORT: 3000

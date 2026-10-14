@@ -1,5 +1,6 @@
 import { Body, Controller, Dependencies, HttpCode, Module, Post } from '@nestjs/common';
 import Joi from 'joi';
+import { Papeis } from '../auth/decorators';
 import { ControladorCrud, validar } from '../comum/crud/controlador-crud';
 import {
   data,
@@ -46,6 +47,7 @@ export class PrecosController extends ControladorCrud {
     super(repositorio, esquemas);
   }
 
+  @Papeis('admin')
   @Post('lote')
   @HttpCode(200)
   lote(@Body() corpo) {

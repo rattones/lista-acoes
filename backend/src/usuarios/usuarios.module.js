@@ -1,5 +1,6 @@
 import { Controller, Dependencies, Module } from '@nestjs/common';
 import Joi from 'joi';
+import { Papeis } from '../auth/decorators';
 import { ControladorCrud } from '../comum/crud/controlador-crud';
 import { esquemaListagem, texto } from '../comum/crud/esquemas';
 import { Repositorio } from '../comum/crud/repositorio';
@@ -25,6 +26,8 @@ const esquemas = {
 };
 
 // Usuários sem rota de criação (só por convite, tarefa 015) e sem senha_hash nas respostas.
+// Só admin gerencia usuários, inclusive a leitura (tarefa 012).
+@Papeis('admin')
 @Controller('usuarios')
 @Dependencies(REPOSITORIO_USUARIOS)
 export class UsuariosController extends ControladorCrud {
@@ -42,7 +45,8 @@ export class UsuariosController extends ControladorCrud {
     {
       provide: REPOSITORIO_USUARIOS,
       inject: [CONEXAO_DB],
-      useFactory: (db) => new Repositorio(db, { tabela: 'usuarios', ocultas: ['senha_hash'] }),
+      useFactory: (db) =>
+        new Repositorio(db, { tabela: 'usuarios', ocultas: ['senha_hash', 'versao_sessao'] }),
     },
   ],
 })

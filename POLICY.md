@@ -23,7 +23,7 @@ O Lista de Ações é um sistema privado de acompanhamento de ações, de acesso
 - ¹ O primeiro administrador é cadastrado diretamente no servidor, pelo responsável pelo sistema.
 - A senha **nunca** é guardada como texto: só um hash com sal (argon2id), que não permite recuperá-la.
 - O e-mail não pode ser alterado depois do cadastro.
-- O app não usa cookies de publicidade nem de rastreamento. O único cookie previsto é o de sessão (refresh token), `httpOnly` e `secure`, necessário para manter você conectado.
+- O app não usa cookies de publicidade nem de rastreamento. O único cookie é o de sessão (refresh token), `httpOnly`, `secure` e válido por 7 dias, necessário para manter você conectado. Ele é apagado no logout, e o logout encerra todas as suas sessões abertas.
 - A landing page não coleta dados pessoais nem tem formulários.
 
 ### Dados de mercado

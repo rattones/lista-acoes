@@ -75,6 +75,7 @@ Monorepo com npm workspaces:
 Com Docker, no servidor casa-ratton (API 3000, app 8080, landing 8081, com hot reload):
 
 ```sh
+echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # uma vez: segredo dos tokens
 docker compose -f infra/docker-compose.dev.yml up -d --build
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w backend -- --email <e-mail> --nome <nome>
@@ -86,6 +87,7 @@ Sem Docker, com Node 24 (`nvm use`):
 ```sh
 npm install
 cp backend/.env-example backend/.env
+echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env
 npm run db:migrate -w backend
 npm run db:admin -w backend -- --email <e-mail> --nome <nome>
 npm run dev
@@ -128,9 +130,33 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 | ---------------- | --------------------------------------- |
 | `GET /v1/health` | `{ "status": "ok", "versao": "x.y.z" }` |
 
+### Autenticação e permissões
+
+Login por e-mail e senha. Toda rota exige `Authorization: Bearer <token_acesso>`, exceto `GET /v1/health`, `POST /v1/auth/login` e `POST /v1/auth/refresh`.
+
+| Rota                    | O que faz                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/auth/login`   | `{ email, senha }` → `{ token_acesso, tipo: "Bearer", expira_em_segundos: 900, usuario }` + cookie do refresh |
+| `POST /v1/auth/refresh` | Com o cookie `refresh_token`: novo token de acesso e cookie renovado                                          |
+| `POST /v1/auth/logout`  | Encerra **todas** as sessões do usuário e apaga o cookie (204)                                                |
+| `GET /v1/auth/eu`       | `{ id, email, nome, papel }` do usuário logado                                                                |
+
+- **Tokens:** JWT de acesso de 15 minutos; refresh token de 7 dias, só em cookie `httpOnly`, `SameSite=Strict`, `Path=/v1/auth` e `Secure` em produção (`COOKIE_SEGURO`). Assinados com `JWT_SEGREDO`.
+- **Sessão:** os tokens levam a `versao_sessao` do usuário. A cada requisição, a API confere no banco se o usuário existe, está ativo, não foi excluído e tem a mesma versão. Logout (e, nas próximas tarefas, troca de senha) incrementa a versão e derruba na hora os tokens já emitidos. Papel, desativação e exclusão valem imediatamente.
+- **Bloqueio:** 5 senhas erradas seguidas bloqueiam a conta por 15 minutos (423 `bloqueado`). Durante o bloqueio, nem a senha certa entra, e a senha não é conferida. Login certo zera as tentativas e registra `ultimo_login_em`.
+- **Erros:** e-mail inexistente, senha errada, usuário inativo ou excluído → o mesmo 401 `E-mail ou senha inválidos`, com tempo de resposta equivalente.
+- **Rate limit:** 10 tentativas de login por minuto por IP (429). Atrás do Nginx, o IP vem do `X-Forwarded-For` (`CONFIAR_PROXY=1` em PROD).
+
+| Papel    | Pode                                                                                                                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `leitor` | Listar e obter `ativos`, `execucoes`, `sinais`, `precos` e `noticias`; `GET /auth/eu`; logout                         |
+| `admin`  | Tudo do leitor, mais criar, atualizar, excluir (lógica e física), restaurar, lotes, `incluir_excluidos` e `/usuarios` |
+
+Sem token: 401 `nao_autenticado`. Papel insuficiente: 403 `proibido`. No código, `@Publico()` libera uma rota e `@Papeis('admin')` restringe uma rota ou um controller.
+
 ### CRUD dos recursos
 
-Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `noticias` e `usuarios`. Por enquanto as rotas não exigem autenticação: os guards e a restrição de `incluir_excluidos` e `permanente` a admin entram na tarefa 012.
+Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `noticias` e `usuarios`. Todas as rotas exigem autenticação (ver [Autenticação e permissões](#autenticação-e-permissões)).
 
 | Rota                                       | O que faz                                                                            |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |

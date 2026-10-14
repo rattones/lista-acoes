@@ -134,7 +134,16 @@ const configCompose = (arquivo, ...extras) =>
   JSON.parse(
     execFileSync(
       'docker',
-      ['compose', '-f', join(raiz, 'infra', arquivo), ...extras, 'config', '--format', 'json'],
+      [
+        'compose',
+        '-f',
+        join(raiz, 'infra', arquivo),
+        ...extras,
+        'config',
+        '--no-env-resolution',
+        '--format',
+        'json',
+      ],
       { cwd: raiz, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     ),
   );

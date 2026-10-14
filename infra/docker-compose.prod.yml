@@ -79,13 +79,16 @@ services:
     image: lista-acoes-backend
     restart: unless-stopped
     init: true
+    # Obrigatório: segredos da API (JWT_SEGREDO). Veja backend/.env-example.
     env_file:
       - path: ../backend/.env
-        required: false
+        required: true
     environment:
       NODE_ENV: production
       PORT: 3000
       CORS_ORIGENS: ${CORS_ORIGENS:-https://app.listadecompras.net}
+      # Um salto de proxy (Nginx): o IP do cliente vem do X-Forwarded-For.
+      CONFIAR_PROXY: 1
     volumes:
       - dados:/app/backend/data
     healthcheck:
