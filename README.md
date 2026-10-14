@@ -87,6 +87,6 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda a cada push na `main` e em to
 | Testes e build do frontend | `npm test -w frontend` e `npm run build -w frontend`                     |
 | Imagens e smoke de PROD    | Build das imagens de PROD (sem push), stack no ar e `npm run smoke:prod` |
 
-Uma falha em qualquer job reprova o PR.
+A `main` é protegida: os quatro jobs são checks obrigatórios, inclusive para administradores. Um PR só pode ser mergeado com todos verdes e com a branch atualizada em relação à `main`. Push direto, force push e exclusão da `main` estão bloqueados.
 
 Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
