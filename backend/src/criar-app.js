@@ -10,6 +10,8 @@ export async function criarApp() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const logger = app.get(Logger);
   app.useLogger(logger);
+  // Lotes de até 1000 itens dos agentes passam do limite padrão de 100 KB.
+  app.useBodyParser('json', { limit: '1mb' });
   app.setGlobalPrefix('v1');
   app.enableCors({ origin: app.get(ConfigService).get('CORS_ORIGENS') });
   app.useGlobalFilters(new FiltroErros(logger));

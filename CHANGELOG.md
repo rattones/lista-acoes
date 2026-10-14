@@ -4,8 +4,16 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ## [Não lançado]
 
+### Corrigido
+
+- O `babel-plugin-parameter-decorator` gerava código inválido (`dec(_class.prototype, ...)` antes de `_class` existir) para qualquer decorator de parâmetro, em método ou construtor; foi removido (tarefa 011).
+- Corpo de requisição grande demais respondia 500; agora responde 413 `payload_muito_grande` no formato padrão (tarefa 011).
+
 ### Alterado
 
+- Decorators de parâmetro (`@Body()`, `@Query()`, `@Param()`, `@Inject()` no construtor) passam a ser convertidos por um plugin local no `backend/babel.config.js`, no formato do `__param` do TypeScript (tarefa 011).
+- Limite do corpo JSON da API sobe de 100 KB para 1 MB, para os lotes dos agentes (tarefa 011).
+- `usuarios` nunca devolve `senha_hash`; o `PATCH` aceita só `nome`, `papel` e `ativo` (tarefa 011).
 - `ativos.monitorar` e `ativos.removido_em` saem do schema: `status` (`ativo`/`inativo`) decide se o ativo entra no relatório e `excluido_em` marca a exclusão lógica (tarefa 010).
 - POLICY informa que o primeiro admin é cadastrado no servidor, não por convite (tarefa 010).
 - O CLI do banco (`db:migrate`, `db:status`, `db:admin`) exige só `DB_ARQUIVO` (com padrão), sem validar as demais variáveis da API como `CORS_ORIGENS` (tarefa 010).
@@ -18,6 +26,10 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- CRUD de `ativos`, `execucoes`, `sinais`, `precos` (`precos_diarios`), `noticias` e `usuarios`: listagem paginada com ordenação, filtros e `incluir_excluidos`, obter, criar, atualizar (PATCH), exclusão lógica, exclusão física (`?permanente=true`) e restauração (`POST /:id/restaurar`) (tarefa 011).
+- Repositório genérico em SQL puro (`src/comum/crud/repositorio.js`) e controlador base (`src/comum/crud/controlador-crud.js`) reutilizados pelos recursos (tarefa 011).
+- `POST /v1/precos/lote` e `POST /v1/noticias/lote`: upsert de até 1000 itens numa transação, devolvendo `{ inseridos, atualizados }` (tarefa 011).
+- Violações de restrição do SQLite viram respostas no formato padrão: duplicata → 409 `conflito` (com os campos), registro relacionado inexistente → 422 `entidade_invalida` (tarefa 011).
 - Schema inicial do banco (`backend/migrations/0001_schema_inicial.sql`): `ativos`, `execucoes`, `sinais` (com `ativo_id`), `precos_diarios`, `noticias`, `usuarios` e `agentes_tokens`, com exclusão lógica (`excluido_em`) em todas, chaves estrangeiras com cascata, índices por ativo e data, e as views `v_ativos_monitorados`, `v_resumo_atual`, `v_historico_nota` e `v_proximos_eventos` ignorando registros excluídos (tarefa 010).
 - Carga inicial (`0002_carga_inicial.sql`) com os 6 ativos do início do projeto (tarefa 010).
 - `npm run db:admin -w backend -- --email <e-mail> --nome <nome>`: cria um usuário admin, com a senha pedida sem eco no terminal ou lida da entrada (tarefa 010).
