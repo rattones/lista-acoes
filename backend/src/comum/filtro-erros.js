@@ -13,6 +13,43 @@ const CODIGOS = {
   429: 'muitas_requisicoes',
 };
 
+// Violações de restrição do SQLite que escapam da validação (ex.: duplicata, FK inexistente).
+function traduzirErroSqlite(excecao) {
+  switch (excecao.code) {
+    case 'SQLITE_CONSTRAINT_UNIQUE':
+    case 'SQLITE_CONSTRAINT_PRIMARYKEY': {
+      // "UNIQUE constraint failed: tabela.coluna1, tabela.coluna2"
+      const campos = (excecao.message.split(': ')[1] ?? '')
+        .split(', ')
+        .filter(Boolean)
+        .map((coluna) => coluna.split('.').pop());
+      return {
+        status: 409,
+        erro: 'conflito',
+        mensagem: 'Já existe um registro com estes dados',
+        detalhes: campos.map((campo) => ({ campo, mensagem: 'valor já cadastrado' })),
+      };
+    }
+    case 'SQLITE_CONSTRAINT_FOREIGNKEY':
+      return {
+        status: 422,
+        erro: 'entidade_invalida',
+        mensagem: 'Registro relacionado inexistente',
+        detalhes: null,
+      };
+    case 'SQLITE_CONSTRAINT_CHECK':
+    case 'SQLITE_CONSTRAINT_NOTNULL':
+      return {
+        status: 400,
+        erro: 'requisicao_invalida',
+        mensagem: 'Dados inválidos na requisição',
+        detalhes: null,
+      };
+    default:
+      return null;
+  }
+}
+
 // Toda resposta de erro segue o formato { erro, mensagem, detalhes }.
 @Catch()
 export class FiltroErros {
@@ -24,6 +61,23 @@ export class FiltroErros {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse();
     const req = ctx.getRequest();
+
+    const sqlite = traduzirErroSqlite(excecao);
+    if (sqlite) {
+      const { status, ...corpo } = sqlite;
+      res.status(status).json(corpo);
+      return;
+    }
+
+    // Erros do padrão http-errors (ex.: body-parser: corpo grande demais) trazem o status.
+    if (!(excecao instanceof HttpException) && excecao?.expose === true && excecao.status < 500) {
+      res.status(excecao.status).json({
+        erro: CODIGOS[excecao.status] ?? 'erro_http',
+        mensagem: excecao.status === 413 ? 'Corpo da requisição grande demais' : excecao.message,
+        detalhes: null,
+      });
+      return;
+    }
 
     if (!(excecao instanceof HttpException)) {
       this.logger.error({ err: excecao, reqId: req.id }, 'Erro não tratado');

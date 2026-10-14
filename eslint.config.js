@@ -25,6 +25,14 @@ export default [
         babelOptions: { configFile: './backend/babel.config.js' },
       },
     },
+    rules: {
+      // A análise de escopo não enxerga identificadores usados só em decorators de
+      // parâmetro (@Body(), @Query()...): os decorators de parâmetro do Nest são ignorados.
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^(Body|Query|Param|Headers|Req|Res|Ip|Inject|Optional|Session)$' },
+      ],
+    },
   },
   {
     files: ['backend/**/*.test.js', 'backend/test/**/*.js'],

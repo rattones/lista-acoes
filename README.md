@@ -112,7 +112,7 @@ O CI roda lint, estrutura, testes, builds e o smoke de PROD em todo pull request
 
 ## Backend (API)
 
-NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo `/v1`.
+NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo `/v1`. Os decorators de parâmetro (`@Body()`, `@Query()`, `@Inject()` no construtor...) são convertidos por um plugin local no `backend/babel.config.js`, no formato do `__param` do TypeScript.
 
 | Comando                                                         | O que faz                                        |
 | --------------------------------------------------------------- | ------------------------------------------------ |
@@ -128,8 +128,33 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 | ---------------- | --------------------------------------- |
 | `GET /v1/health` | `{ "status": "ok", "versao": "x.y.z" }` |
 
-- **Erros:** toda resposta de erro segue o formato `{ "erro": "codigo", "mensagem": "texto", "detalhes": ... }`, com códigos como `requisicao_invalida` (400), `nao_encontrado` (404) e `erro_interno` (500).
-- **Validação:** payloads são validados com esquemas Joi por parâmetro: `@Body(new ValidacaoPipe(esquema))`; a falha responde 400 com a lista de campos em `detalhes`.
+### CRUD dos recursos
+
+Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `noticias` e `usuarios`. Por enquanto as rotas não exigem autenticação: os guards e a restrição de `incluir_excluidos` e `permanente` a admin entram na tarefa 012.
+
+| Rota                                       | O que faz                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `GET /v1/{recurso}`                        | Lista paginada: `{ dados, paginacao: { pagina, por_pagina, total, total_paginas } }` |
+| `GET /v1/{recurso}/:id`                    | Obtém um registro (404 se não existe ou está excluído)                               |
+| `POST /v1/{recurso}`                       | Cria (201); não existe para `usuarios` (cadastro só por convite, tarefa 015)         |
+| `PATCH /v1/{recurso}/:id`                  | Atualiza só os campos enviados (ao menos um)                                         |
+| `DELETE /v1/{recurso}/:id`                 | Exclusão lógica (204): preenche `excluido_em`                                        |
+| `DELETE /v1/{recurso}/:id?permanente=true` | Exclusão física (204), inclusive de registro já excluído                             |
+| `POST /v1/{recurso}/:id/restaurar`         | Desfaz a exclusão lógica (409 se o registro não está excluído)                       |
+| `POST /v1/precos/lote`                     | Upsert de até 1000 preços por `(ativo_id, data)`: `{ inseridos, atualizados }`       |
+| `POST /v1/noticias/lote`                   | Upsert de até 1000 notícias pela `url`: `{ inseridos, atualizados }`                 |
+
+- **Listagem:** `pagina` (padrão 1), `por_pagina` (padrão 20, máximo 100), `ordenar` (`campo` ou `-campo` para decrescente; padrão `id`), filtros de igualdade por recurso (ex.: `ativos?status=inativo&tipo=acao`) e `incluir_excluidos=true`. Parâmetro desconhecido responde 400.
+- **Validação:** esquemas Joi de cada recurso, com os mesmos valores permitidos pelos `CHECK` do schema. Campo desconhecido responde 400.
+- **Conflitos:** valor único repetido (ex.: código de ativo, URL de notícia) → 409 `conflito`, com o campo em `detalhes`; registro relacionado inexistente (ex.: `ativo_id`) → 422 `entidade_invalida`.
+- **Lotes:** gravados numa transação (se um item falhar, nada é gravado). No conflito, só os campos enviados são alterados, e um registro excluído logicamente continua excluído.
+- **Booleanos** (`concordam`, `mm50_subindo`, `usuarios.ativo`...) são aceitos como `true`/`false` e devolvidos como `1`/`0`.
+- **Sinais:** o código do ativo (`ativo`) é preenchido a partir do `ativo_id` e não é aceito no payload.
+- **Usuários:** `senha_hash` nunca sai da API. Pelo `PATCH`, só `nome`, `papel` e `ativo` (o e-mail não muda; a senha tem fluxo próprio).
+- **Corpo das requisições:** JSON de até 1 MB.
+
+- **Erros:** toda resposta de erro segue o formato `{ "erro": "codigo", "mensagem": "texto", "detalhes": ... }`, com códigos como `requisicao_invalida` (400), `nao_encontrado` (404), `conflito` (409), `payload_muito_grande` (413), `entidade_invalida` (422) e `erro_interno` (500).
+- **Validação:** payloads são validados com esquemas Joi (`ValidacaoPipe`); a falha responde 400 com a lista de campos em `detalhes`.
 - **Configuração:** variáveis de ambiente validadas na inicialização; a API não sobe se faltar alguma obrigatória (ver `backend/.env-example`).
 - **Logs:** JSON (pino), com request id em cada linha; o `x-request-id` recebido é reaproveitado ou gerado e devolvido na resposta.
 - **CORS:** liberado somente para as origens em `CORS_ORIGENS`.

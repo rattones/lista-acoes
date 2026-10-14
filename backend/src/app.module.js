@@ -3,8 +3,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { validarConfig } from './config/configuracao';
+import { AtivosModule } from './ativos/ativos.module';
 import { DatabaseModule } from './database/database.module';
+import { ExecucoesModule } from './execucoes/execucoes.module';
 import { HealthController } from './health/health.controller';
+import { NoticiasModule } from './noticias/noticias.module';
+import { PrecosModule } from './precos/precos.module';
+import { SinaisModule } from './sinais/sinais.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 const REQUEST_ID_VALIDO = /^[\w-]{1,100}$/;
 
@@ -30,6 +36,12 @@ function gerarRequestId(req, res) {
       }),
     }),
     DatabaseModule,
+    AtivosModule,
+    ExecucoesModule,
+    SinaisModule,
+    PrecosModule,
+    NoticiasModule,
+    UsuariosModule,
   ],
   controllers: [HealthController],
 })
