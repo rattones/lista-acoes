@@ -13,13 +13,14 @@ O Lista de Ações é um sistema privado de acompanhamento de ações, de acesso
 | Dado                                          | Origem                        | Para quê                               |
 | --------------------------------------------- | ----------------------------- | -------------------------------------- |
 | Nome                                          | Informado no cadastro         | Identificar você no app                |
-| E-mail                                        | Convite enviado pelo admin    | Login, convites e recuperação de senha |
+| E-mail                                        | Convite enviado pelo admin¹   | Login, convites e recuperação de senha |
 | Senha (somente o hash)                        | Definida por você no cadastro | Login                                  |
 | Papel (`admin` ou `leitor`)                   | Escolhido por quem convidou   | Controle do que você pode fazer        |
 | Tentativas de login falhas e bloqueio         | Gerados no login              | Proteção contra tentativas de invasão  |
 | Data do último login, do cadastro e da edição | Gerados pelo sistema          | Segurança e suporte                    |
 | Dados que você cadastra (ex.: ativos, chaves) | Informados por você no app    | Funcionamento do sistema               |
 
+- ¹ O primeiro administrador é cadastrado diretamente no servidor, pelo responsável pelo sistema.
 - A senha **nunca** é guardada como texto: só um hash com sal (argon2id), que não permite recuperá-la.
 - O e-mail não pode ser alterado depois do cadastro.
 - O app não usa cookies de publicidade nem de rastreamento. O único cookie previsto é o de sessão (refresh token), `httpOnly` e `secure`, necessário para manter você conectado.

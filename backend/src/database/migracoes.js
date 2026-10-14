@@ -1,6 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// Migrations do projeto: backend/migrations (vale para src/ e para dist/).
+export const PASTA_MIGRACOES = join(__dirname, '..', '..', 'migrations');
+
 const NOME_VALIDO = /^(\d{4})_[a-z0-9_-]+\.sql$/i;
 
 // Lê a pasta e devolve as migrations ordenadas por versão: { versao, nome, arquivo }.

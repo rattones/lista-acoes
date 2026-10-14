@@ -6,6 +6,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- `ativos.monitorar` e `ativos.removido_em` saem do schema: `status` (`ativo`/`inativo`) decide se o ativo entra no relatório e `excluido_em` marca a exclusão lógica (tarefa 010).
+- POLICY informa que o primeiro admin é cadastrado no servidor, não por convite (tarefa 010).
+- O CLI do banco (`db:migrate`, `db:status`, `db:admin`) exige só `DB_ARQUIVO` (com padrão), sem validar as demais variáveis da API como `CORS_ORIGENS` (tarefa 010).
 - Imagens Docker instalam as dependências com `npm ci --ignore-scripts`: o better-sqlite3 traz o binário pronto, mas o npm tentava compilá-lo com node-gyp (sem Python na imagem slim). A imagem DEV roda em seguida só os scripts de `@parcel/watcher` e `unrs-resolver`; a de PROD passa a levar a pasta `migrations/`, que o compose DEV também monta (tarefa 009).
 - Proxy de PROD passa a usar a imagem oficial `nginx:alpine` (mestre como root, para ler a chave da Let's Encrypt), com healthcheck interno em `127.0.0.1:8090/saude` (tarefa 006).
 - Smoke de PROD testa tudo em HTTPS e inclui redirect, HSTS, desafio ACME, recusa de host desconhecido no 443 e o serviço certbot; o CI gera o certificado de teste antes de subir a stack (tarefa 006).
@@ -15,6 +18,10 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Schema inicial do banco (`backend/migrations/0001_schema_inicial.sql`): `ativos`, `execucoes`, `sinais` (com `ativo_id`), `precos_diarios`, `noticias`, `usuarios` e `agentes_tokens`, com exclusão lógica (`excluido_em`) em todas, chaves estrangeiras com cascata, índices por ativo e data, e as views `v_ativos_monitorados`, `v_resumo_atual`, `v_historico_nota` e `v_proximos_eventos` ignorando registros excluídos (tarefa 010).
+- Carga inicial (`0002_carga_inicial.sql`) com os 6 ativos do início do projeto (tarefa 010).
+- `npm run db:admin -w backend -- --email <e-mail> --nome <nome>`: cria um usuário admin, com a senha pedida sem eco no terminal ou lida da entrada (tarefa 010).
+- Hash de senha argon2id (`@node-rs/argon2`) e política de senha com mínimo de 10 caracteres em `backend/src/auth/senha.js` (tarefa 010).
 - `POLICY.md`: política de privacidade inicial (LGPD), com dados coletados, logs de acesso, e-mails pelo Gmail, armazenamento, compartilhamento, exclusão permanente da conta e direitos do titular (tarefa 008).
 - README com visão geral, diagrama da arquitetura (containers e subdomínios), stack, "Como rodar em DEV" e "Como testar"; INSTALL com o Docker nos requisitos (tarefa 008).
 - Teste de estrutura da documentação base: README, CHANGELOG, INSTALL e POLICY existem e têm as seções obrigatórias (tarefa 008).

@@ -1,5 +1,8 @@
 import Joi from 'joi';
 
+// Arquivo do banco, relativo à pasta backend/ (usado também pelo CLI do banco).
+export const DB_ARQUIVO_PADRAO = 'data/monitor.db';
+
 const esquema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   PORT: Joi.number().port().default(3000),
@@ -7,7 +10,7 @@ const esquema = Joi.object({
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),
   CORS_ORIGENS: Joi.string().required(),
-  DB_ARQUIVO: Joi.string().default('data/monitor.db'),
+  DB_ARQUIVO: Joi.string().default(DB_ARQUIVO_PADRAO),
 }).unknown(true);
 
 // Valida as variáveis de ambiente na inicialização; a API não sobe com configuração inválida.
