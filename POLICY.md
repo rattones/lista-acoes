@@ -37,9 +37,9 @@ Para segurança, diagnóstico de erros e prevenção de abusos, cada acesso gera
 - **Proxy (Nginx):** endereço IP, data e hora, site acessado, endereço da página, código de resposta, tamanho e tempo da resposta, navegador (user agent) e um identificador da requisição.
 - **API:** o mesmo identificador da requisição, endereço IP, método e endereço acessado, navegador (user agent), código e tempo da resposta.
 
-Os logs ficam no próprio servidor, não são compartilhados e não são usados para traçar perfil de uso.
+Os logs **não** gravam senhas, cookies, tokens de sessão nem chaves de acesso: da requisição, só são guardados os campos acima.
 
-> Em revisão (tarefa 029): o log da API ainda grava os cabeçalhos completos da requisição, e os logs não têm prazo de retenção definido. A correção remove credenciais dos logs e define a rotação (tamanho e tempo máximos), que será informada aqui.
+Os logs ficam no próprio servidor, não são compartilhados e não são usados para traçar perfil de uso. Eles têm limite de tamanho: cada serviço guarda no máximo 50 MB de logs (5 arquivos de 10 MB), e os registros mais antigos são apagados automaticamente à medida que novos chegam. Por isso, o tempo de guarda varia com o volume de acessos.
 
 ## Envio de e-mails
 
@@ -69,7 +69,7 @@ Os dados pessoais não são vendidos nem compartilhados. Os únicos terceiros en
 - Você pode **excluir sua conta permanentemente** na tela de perfil do app. A exclusão apaga, de imediato e em cascata, o seu cadastro e tudo o que você criou (por exemplo, as chaves de acesso de agentes). Ela não pode ser desfeita.
 - Registros removidos com exclusão lógica (marcados como excluídos, mas recuperáveis) também são apagados quando a conta é excluída.
 - Cópias de segurança anteriores à exclusão podem conter seus dados até serem substituídas pelo ciclo normal de backups.
-- Os logs de acesso são apagados conforme a rotação dos logs.
+- Os logs de acesso são apagados automaticamente pela rotação (limite de 50 MB por serviço).
 
 ## Seus direitos
 

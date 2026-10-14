@@ -6,6 +6,14 @@
 # A API fica exposta à internet: somente dados de teste, nunca credenciais de produção.
 name: lista-acoes-dev
 
+# Rotação dos logs dos containers (tarefa 029): até 5 arquivos de 10 MB por serviço
+# (50 MB); os mais antigos são descartados.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
 x-node: &node
   build:
     context: ..
@@ -13,6 +21,7 @@ x-node: &node
   image: lista-acoes-dev
   init: true
   restart: unless-stopped
+  logging: *logging
 
 services:
   backend:
