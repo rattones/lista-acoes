@@ -4,6 +4,51 @@
 
 Gerenciador de ações: acompanha o mercado, armazena os dados coletados por agentes e apoia a decisão de compra e venda.
 
+## Visão geral
+
+- **Agentes coletores** (etapa futura) enviam à API os preços diários e as notícias dos ativos monitorados, autenticados por API key.
+- Um **agente de decisão** externo (etapa futura) lê esses dados e grava a nota de cada ativo (1 a 5). A API só armazena e fornece os dados; ela não calcula a nota.
+- O **app** mostra o dashboard, os ativos monitorados e os usuários. O acesso é só por convite: não existe cadastro aberto.
+- A **landing page** apresenta o projeto e leva ao app.
+- **Bots** de compra e venda na XP Investimentos ficam para o fim do projeto.
+
+Situação atual: fundação pronta (monorepo, Docker em DEV e PROD, HTTPS, CI) e executor de migrations do banco. O schema, o CRUD e a autenticação são as próximas etapas ([issues](https://github.com/rattones/lista-acoes/issues) e [projeto](https://github.com/users/rattones/projects/2)).
+
+## Arquitetura
+
+Em PROD, tudo roda em containers Docker numa VPS. Só o proxy publica portas e escolhe o destino pelo subdomínio:
+
+```mermaid
+flowchart LR
+  navegador([Navegador]) -->|HTTPS 443| proxy
+  agentes([Agentes]) -->|HTTPS + API key| proxy
+  subgraph VPS["VPS (Docker)"]
+    proxy["proxy<br/>Nginx: TLS, redirect 80→443"]
+    certbot["certbot<br/>renova o certificado"]
+    backend["backend<br/>API NestJS :3000"]
+    frontend["frontend<br/>Nginx: app :8080, landing :8081"]
+    db[("SQLite<br/>volume dados")]
+    proxy -->|api.listadecompras.net| backend
+    proxy -->|app.listadecompras.net| frontend
+    proxy -->|www. e raiz| frontend
+    backend --- db
+    certbot -. certificado .- proxy
+  end
+```
+
+Em DEV (servidor casa-ratton), não há proxy: cada serviço usa sua porta (API 3000, app 8080, landing 8081).
+
+## Stack
+
+| Camada         | Tecnologia                                                                  |
+| -------------- | --------------------------------------------------------------------------- |
+| Backend        | Node.js 24, NestJS 11 em JavaScript (Babel 7), Joi, pino                    |
+| Banco          | SQLite com better-sqlite3 e SQL puro, migrations `.sql` versionadas         |
+| Frontend       | Vue 3, Vite, Vuetify, Pinia, Vue Router; Chart.js no dashboard (tarefa 024) |
+| Testes         | Jest + Supertest (backend), Vitest + Vue Test Utils (frontend)              |
+| Infraestrutura | Docker Compose, Nginx, Let's Encrypt (certbot), GitHub Actions              |
+| E-mail         | Gmail SMTP com nodemailer (tarefa 013)                                      |
+
 ## Estrutura
 
 Monorepo com npm workspaces:
@@ -24,6 +69,44 @@ Monorepo com npm workspaces:
 | `npm run format`    | Formata os arquivos com o Prettier                                     |
 | `npm run dev`       | Sobe o ambiente de desenvolvimento de cada workspace                   |
 | `npm run smoke:dev` | Smoke test do ambiente DEV no Docker (containers no ar)                |
+
+## Como rodar em DEV
+
+Com Docker, no servidor casa-ratton (API 3000, app 8080, landing 8081, com hot reload):
+
+```sh
+docker compose -f infra/docker-compose.dev.yml up -d --build
+docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend
+npm run smoke:dev
+```
+
+Sem Docker, com Node 24 (`nvm use`):
+
+```sh
+npm install
+cp backend/.env-example backend/.env
+npm run db:migrate -w backend
+npm run dev
+```
+
+Hostnames, firewall e variáveis: [INSTALL.md](INSTALL.md#ambiente-dev-com-docker-servidor-casa-ratton).
+
+## Como testar
+
+O desenvolvimento segue TDD: o teste novo é escrito antes e precisa falhar antes da implementação.
+
+| Comando                  | O que testa                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `npm test`               | Tudo: estrutura do repositório, backend e frontend         |
+| `npm run test:estrutura` | Estrutura do monorepo, `.gitignore` e documentação base    |
+| `npm test -w backend`    | Unitários e e2e da API (banco SQLite em memória)           |
+| `npm test -w frontend`   | Componentes, rotas e cliente HTTP do app e da landing      |
+| `npm run lint`           | ESLint e Prettier                                          |
+| `npm run smoke:dev`      | Ambiente DEV no ar (containers rodando)                    |
+| `npm run smoke:prod`     | Stack de PROD local com certificado de teste (ver INSTALL) |
+| `npm run verifica:https` | Certificado, HSTS e redirect nos hosts reais de PROD       |
+
+O CI roda lint, estrutura, testes, builds e o smoke de PROD em todo pull request (ver [Integração contínua](#integração-contínua)).
 
 ## Backend (API)
 
@@ -72,10 +155,6 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
 - **Landing page:** o link "Acessar o app" usa `VITE_APP_URL` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro: usuários entram por convite.
 
-## Ambiente DEV (Docker)
-
-`docker compose -f infra/docker-compose.dev.yml up -d --build` sobe a API (3000), o app (8080) e a landing page (8081) no servidor casa-ratton, com hot reload. `npm run smoke:dev` verifica se tudo responde. Detalhes, hostnames e firewall estão no [INSTALL.md](INSTALL.md#ambiente-dev-com-docker-servidor-casa-ratton).
-
 ## Produção (Docker + Nginx)
 
 `docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (portas 80 e 443), a API, o frontend e o certbot. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. Tudo é servido em HTTPS com certificado da Let's Encrypt (renovação automática), e o HTTP redireciona com 301. `npm run smoke:prod` testa a stack e `npm run verifica:https` confere o certificado de PROD. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
@@ -93,4 +172,8 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda a cada push na `main` e em to
 
 A `main` é protegida: os quatro jobs são checks obrigatórios, inclusive para administradores. Um PR só pode ser mergeado com todos verdes e com a branch atualizada em relação à `main`. Push direto, force push e exclusão da `main` estão bloqueados.
 
-Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
+## Documentação
+
+- [INSTALL.md](INSTALL.md): requisitos, variáveis de ambiente, DEV (portas e firewall) e PROD (VPS, Docker e SSL).
+- [CHANGELOG.md](CHANGELOG.md): histórico de mudanças.
+- [POLICY.md](POLICY.md): política de privacidade.
