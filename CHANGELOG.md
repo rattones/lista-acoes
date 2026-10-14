@@ -15,6 +15,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- `POLICY.md`: política de privacidade inicial (LGPD), com dados coletados, logs de acesso, e-mails pelo Gmail, armazenamento, compartilhamento, exclusão permanente da conta e direitos do titular (tarefa 008).
+- README com visão geral, diagrama da arquitetura (containers e subdomínios), stack, "Como rodar em DEV" e "Como testar"; INSTALL com o Docker nos requisitos (tarefa 008).
+- Teste de estrutura da documentação base: README, CHANGELOG, INSTALL e POLICY existem e têm as seções obrigatórias (tarefa 008).
 - Banco SQLite com better-sqlite3: `DatabaseModule` global expondo a conexão (`CONEXAO_DB`) com `foreign_keys`, WAL e `busy_timeout`, fechada no encerramento da API; arquivo em `DB_ARQUIVO` (padrão `data/monitor.db`) (tarefa 009).
 - Executor de migrations: `backend/migrations/NNNN_descricao.sql` aplicadas em ordem, cada uma em transação, com controle em `schema_migrations`; comandos `npm run db:migrate -w backend` e `npm run db:status -w backend` (na imagem de PROD: `node dist/database/cli.js migrate|status`) (tarefa 009).
 - HTTPS em PROD com certificado da Let's Encrypt (um só, com `listadecompras.net`, `www.`, `app.` e `api.`): proxy na porta 443 (`PROXY_PORTA_HTTPS`) com TLS 1.2/1.3 e HTTP/2, redirect 301 do HTTP para o HTTPS e HSTS de 1 ano (tarefa 006).

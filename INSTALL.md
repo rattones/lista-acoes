@@ -4,6 +4,8 @@
 
 - Node.js 24 (versão fixada em `.nvmrc`; com nvm: `nvm use`)
 - npm 11 ou superior
+- Docker com Compose v2, para o ambiente DEV em containers e para PROD
+- Em PROD: VPS Linux com as portas 80 e 443 liberadas e os registros DNS dos subdomínios (ver [Produção](#produção-vps-com-docker-e-nginx))
 
 ## Passos
 

@@ -76,3 +76,55 @@ test('.gitignore ignora node_modules, .env, bancos e builds, mas não .env-examp
     assert.ok(!ignorado(caminho), `"${caminho}" não deveria ser ignorado`);
   }
 });
+
+// Documentação base (tarefa 008): .skill/DOCUMENTAR.md.
+const lerTexto = (arquivo) => readFileSync(join(raiz, arquivo), 'utf8');
+const secoes = (texto) => [...texto.matchAll(/^##+ (.+)$/gm)].map(([, titulo]) => titulo);
+
+test('README, CHANGELOG, INSTALL e POLICY existem na raiz', () => {
+  for (const arquivo of ['README.md', 'CHANGELOG.md', 'INSTALL.md', 'POLICY.md']) {
+    assert.ok(existsSync(join(raiz, arquivo)), `"${arquivo}" ausente`);
+  }
+});
+
+test('README tem visão geral, arquitetura, stack, DEV e testes, e aponta para os demais', () => {
+  const readme = lerTexto('README.md');
+  const titulos = secoes(readme);
+  for (const secao of ['Arquitetura', 'Stack', 'Como rodar em DEV', 'Como testar']) {
+    assert.ok(titulos.includes(secao), `seção "${secao}" ausente no README`);
+  }
+  assert.match(readme, /```mermaid[\s\S]*api\.listadecompras\.net[\s\S]*```/, 'diagrama ausente');
+  for (const arquivo of ['INSTALL.md', 'CHANGELOG.md', 'POLICY.md']) {
+    assert.ok(readme.includes(`(${arquivo}`), `README não aponta para ${arquivo}`);
+  }
+});
+
+test('CHANGELOG segue o Keep a Changelog com a seção [Não lançado]', () => {
+  const changelog = lerTexto('CHANGELOG.md');
+  assert.match(changelog, /keepachangelog\.com/);
+  assert.match(changelog, /^## \[Não lançado\]$/m);
+});
+
+test('INSTALL cobre requisitos, variáveis, DEV (portas e firewall) e PROD (SSL)', () => {
+  const titulos = secoes(lerTexto('INSTALL.md')).join('\n');
+  for (const trecho of ['Requisitos', 'Variáveis de ambiente', 'DEV', 'Firewall', 'Produção']) {
+    assert.ok(titulos.includes(trecho), `seção com "${trecho}" ausente no INSTALL`);
+  }
+  assert.match(lerTexto('INSTALL.md'), /certificado/i);
+});
+
+test('POLICY cobre dados coletados, logs, e-mail, exclusão e direitos do titular', () => {
+  const policy = lerTexto('POLICY.md');
+  const titulos = secoes(policy);
+  for (const secao of [
+    'Dados coletados',
+    'Logs de acesso',
+    'Envio de e-mails',
+    'Exclusão dos dados',
+    'Seus direitos',
+  ]) {
+    assert.ok(titulos.includes(secao), `seção "${secao}" ausente na POLICY`);
+  }
+  assert.match(policy, /Gmail/);
+  assert.match(policy, /LGPD/);
+});
