@@ -91,38 +91,98 @@ sudo infra/scripts/firewall-dev.sh
 
 ## Produção (VPS) com Docker e Nginx
 
-Três containers: `proxy` (Nginx, o único com porta publicada no host), `backend` (API) e `frontend` (Nginx servindo o app e a landing page). O proxy roteia pelo subdomínio:
+Quatro containers:
 
-| Host                                            | Destino                   |
-| ----------------------------------------------- | ------------------------- |
-| `api.listadecompras.net`                        | `backend:3000` (API)      |
-| `app.listadecompras.net`                        | `frontend:8080` (SPA)     |
-| `www.listadecompras.net` e `listadecompras.net` | `frontend:8081` (landing) |
-| qualquer outro (ou acesso pelo IP)              | conexão fechada (`444`)   |
+- `proxy`: Nginx, o único com portas publicadas no host (80 e 443). Termina o HTTPS.
+- `certbot`: renova o certificado da Let's Encrypt.
+- `backend`: a API.
+- `frontend`: Nginx servindo o app e a landing page.
+
+O proxy roteia pelo subdomínio:
+
+| Host                                            | Destino                                                  |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| `api.listadecompras.net`                        | `backend:3000` (API)                                     |
+| `app.listadecompras.net`                        | `frontend:8080` (SPA)                                    |
+| `www.listadecompras.net` e `listadecompras.net` | `frontend:8081` (landing)                                |
+| qualquer outro (ou acesso pelo IP)              | HTTP: conexão fechada (`444`); HTTPS: handshake recusado |
+
+No HTTP (80), o proxy só atende o desafio da Let's Encrypt (`/.well-known/acme-challenge/`) e redireciona todo o resto com **301** para o HTTPS. No HTTPS (443) envia **HSTS** de 1 ano (`max-age=31536000; includeSubDomains`).
+
+### Primeira subida na VPS
+
+Pré-requisitos:
+
+- Registros DNS A de `listadecompras.net`, `www.`, `app.` e `api.` apontando para a VPS.
+- Portas 80 e 443 liberadas.
 
 Na raiz do repositório, na VPS:
 
 ```sh
-cp infra/.env-example infra/.env               # PROXY_PORTA, CORS_ORIGENS, VITE_API_URL, VITE_APP_URL
-docker compose -f infra/docker-compose.prod.yml up -d --build --wait
-npm run smoke:prod                             # testa os três hosts pelo proxy
+cp infra/.env-example infra/.env               # preencha LETSENCRYPT_EMAIL e revise o resto
+docker compose -f infra/docker-compose.prod.yml build
+
+# 1) Ensaio com o ambiente de testes da Let's Encrypt (certificado não confiável)
+LETSENCRYPT_STAGING=1 infra/scripts/certificado-inicial.sh
+
+# 2) Emissão real (substitui o certificado de teste)
+infra/scripts/certificado-inicial.sh
+
+npm run smoke:prod                             # stack: subdomínios, redirect, HSTS, certbot
+npm run verifica:https                         # de fora: certificado válido, HSTS e 301
 ```
 
+O `certificado-inicial.sh`:
+
+1. Para o proxy.
+2. Emite **um** certificado com os quatro nomes, usando o certbot em modo `--standalone` na porta 80 (desafio HTTP-01).
+3. Sobe a stack.
+
+Ele não sobrescreve um certificado da Let's Encrypt já emitido.
+
+### Renovação do certificado
+
+É automática; não exige ação manual.
+
+- O serviço `certbot` roda `certbot renew --webroot` a cada 12 h. A Let's Encrypt renova quando faltam 30 dias ou menos para o vencimento (o certificado vale 90 dias). O desafio é servido pelo proxy, sem parar nada.
+- O proxy recarrega o Nginx a cada 6 h e passa a usar o certificado novo.
+- Avisos de vencimento chegam ao `LETSENCRYPT_EMAIL`.
+
+Comandos úteis:
+
+```sh
+docker compose -f infra/docker-compose.prod.yml exec certbot certbot certificates        # validade
+docker compose -f infra/docker-compose.prod.yml exec certbot certbot renew --webroot -w /var/www/certbot --dry-run   # ensaio
+docker compose -f infra/docker-compose.prod.yml exec proxy nginx -s reload               # usar já o certificado novo
+npm run verifica:https                                                                   # falha se faltar menos de 15 dias
+```
+
+Se a renovação falhar (o `verifica:https` acusa o vencimento próximo):
+
+1. Veja os logs: `docker compose -f infra/docker-compose.prod.yml logs certbot`.
+2. Confira se o DNS e a porta 80 continuam apontando para a VPS.
+3. Rode o `renew` acima sem `--dry-run`.
+
+### Operação
+
 - **Variáveis:** o Compose lê `infra/.env` sozinho. O `backend/.env` é opcional (segredos de etapas futuras); `NODE_ENV`, `PORT` e `CORS_ORIGENS` vêm do compose. As `VITE_*` são embutidas no build do frontend, então mudar o valor exige `up --build`.
-- **Imagens:** multi-stage. A API roda em `node:24-slim` com só as dependências de produção, e o frontend em `nginx-unprivileged`. Os dois rodam sem root.
-- **Banco:** o volume `lista-acoes_dados` guarda o SQLite. Ele sobrevive a `down` e a rebuilds; **não use `down -v`** em PROD.
-- **Nginx:** `infra/nginx/proxy.conf` (subdomínios, gzip, cabeçalhos de segurança, CSP, `X-Request-Id` repassado à API) e `infra/nginx/frontend.conf` (fallback da SPA para o `index.html`, cache longo nos assets com hash e `no-cache` no `index.html`). Depois de alterar a config do proxy: `docker compose -f infra/docker-compose.prod.yml exec proxy nginx -t` e depois `... exec proxy nginx -s reload`.
-- **Healthchecks e restart:** os três serviços têm healthcheck e `restart: unless-stopped`. O proxy só sobe depois que a API e o frontend estão saudáveis, e consulta o DNS do Docker a cada 10 s, acompanhando a troca de IP quando um container é recriado.
-- **HTTPS:** fica para a tarefa 006 (certificado da HostGator). Até lá, o proxy atende somente HTTP na porta 80, e o HSTS não está ativo.
+- **Imagens:** multi-stage. A API roda em `node:24-slim` com só as dependências de produção, e o frontend em `nginx-unprivileged`; os dois rodam sem root. O proxy usa a imagem oficial `nginx:alpine`: o processo mestre roda como root para ler a chave da Let's Encrypt e abrir as portas 80 e 443, e os workers rodam como `nginx`.
+- **Volumes:** `lista-acoes_dados` guarda o SQLite e `lista-acoes_letsencrypt`, o certificado e a conta da Let's Encrypt. Os dois sobrevivem a `down` e a rebuilds; **não use `down -v`** em PROD.
+- **Nginx:** `infra/nginx/proxy.conf` (subdomínios, TLS, redirect, gzip, cabeçalhos de segurança e HSTS, CSP, `X-Request-Id` repassado à API) e `infra/nginx/frontend.conf` (fallback da SPA para o `index.html`, cache longo nos assets com hash e `no-cache` no `index.html`). Depois de alterar a config do proxy: `docker compose -f infra/docker-compose.prod.yml exec proxy nginx -t` e depois `... exec proxy nginx -s reload`.
+- **Healthchecks e restart:** todos os serviços têm `restart: unless-stopped`, e `proxy`, `backend` e `frontend` têm healthcheck. O proxy só sobe depois que a API e o frontend estão saudáveis, e consulta o DNS do Docker a cada 10 s, acompanhando a troca de IP quando um container é recriado.
 
 ### Testar localmente simulando os subdomínios
 
-Com a porta 80 ocupada, use outra porta:
+Com um certificado **autoassinado** de teste (mesmos nomes e caminho do real) e as portas 80 e 443 ocupadas no host, use outras portas:
 
 ```sh
-PROXY_PORTA=8088 docker compose -f infra/docker-compose.prod.yml up -d --build --wait
-PROXY_PORTA=8088 npm run smoke:prod
-curl -H 'Host: app.listadecompras.net' http://localhost:8088/
-curl --resolve api.listadecompras.net:8088:127.0.0.1 http://api.listadecompras.net:8088/v1/health
-PROXY_PORTA=8088 docker compose -f infra/docker-compose.prod.yml down
+export PROXY_PORTA=8088 PROXY_PORTA_HTTPS=8444
+docker compose -f infra/docker-compose.prod.yml --profile teste run --rm certificado-teste
+docker compose -f infra/docker-compose.prod.yml up -d --build --wait
+npm run smoke:prod
+curl -k --resolve app.listadecompras.net:8444:127.0.0.1 https://app.listadecompras.net:8444/
+curl -i -H 'Host: api.listadecompras.net' http://localhost:8088/v1/health   # 301 para o HTTPS
+docker compose -f infra/docker-compose.prod.yml down -v                     # -v: só em teste!
 ```
+
+O CI faz o mesmo no job "Imagens e smoke de PROD".

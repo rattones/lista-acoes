@@ -60,12 +60,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROXY_PORTA: 8088
+      PROXY_PORTA_HTTPS: 8443
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - run: docker compose -f infra/docker-compose.prod.yml build
+      # Certificado autoassinado com os nomes de PROD (o real vem da Let's Encrypt na VPS).
+      - run: docker compose -f infra/docker-compose.prod.yml --profile teste run --rm certificado-teste
       - run: docker compose -f infra/docker-compose.prod.yml up -d --wait --wait-timeout 120
       - run: npm run smoke:prod
       - name: Logs da stack (em caso de falha)

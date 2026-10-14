@@ -6,11 +6,19 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Proxy de PROD passa a usar a imagem oficial `nginx:alpine` (mestre como root, para ler a chave da Let's Encrypt), com healthcheck interno em `127.0.0.1:8090/saude` (tarefa 006).
+- Smoke de PROD testa tudo em HTTPS e inclui redirect, HSTS, desafio ACME, recusa de host desconhecido no 443 e o serviço certbot; o CI gera o certificado de teste antes de subir a stack (tarefa 006).
+- Host desconhecido no HTTPS tem o handshake TLS recusado (`ssl_reject_handshake`) (tarefa 006).
 - ESLint usa o `@babel/eslint-parser` nos arquivos do backend, por causa dos decorators (tarefa 002).
 - `@babel/core` fixado na versão 7 via `overrides` na raiz: o Jest 30 aceita o Babel 8 como peer e o instalava no lugar do 7 (tarefa 002).
 
 ### Adicionado
 
+- HTTPS em PROD com certificado da Let's Encrypt (um só, com `listadecompras.net`, `www.`, `app.` e `api.`): proxy na porta 443 (`PROXY_PORTA_HTTPS`) com TLS 1.2/1.3 e HTTP/2, redirect 301 do HTTP para o HTTPS e HSTS de 1 ano (tarefa 006).
+- Serviço `certbot` no compose de PROD, com renovação automática a cada 12 h pelo desafio HTTP-01 servido no proxy; o proxy recarrega o Nginx a cada 6 h (tarefa 006).
+- `infra/scripts/certificado-inicial.sh`: emissão inicial do certificado (`LETSENCRYPT_EMAIL`, com ensaio em `LETSENCRYPT_STAGING=1`) (tarefa 006).
+- Certificado autoassinado para testes locais e CI (`--profile teste run certificado-teste`) (tarefa 006).
+- `npm run verifica:https` (`infra/scripts/verifica-https.mjs`): certificado válido (alerta a menos de 15 dias do vencimento), HSTS e 301 nos quatro hosts de PROD (tarefa 006).
 - CI com GitHub Actions (`.github/workflows/ci.yml`) a cada push na `main` e em pull requests: lint e estrutura, testes e build do backend, testes e build do frontend, e build das imagens de PROD com smoke test da stack, em jobs paralelos (tarefa 007).
 - Badge de status do CI no README (tarefa 007).
 - Proteção da `main`: os quatro jobs do CI são checks obrigatórios (também para administradores), a branch precisa estar atualizada antes do merge, e force push e exclusão estão bloqueados (tarefa 007).

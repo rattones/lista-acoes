@@ -74,7 +74,7 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
 ## Produção (Docker + Nginx)
 
-`docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (porta 80), a API e o frontend. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. `npm run smoke:prod` testa os três hosts. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
+`docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (portas 80 e 443), a API, o frontend e o certbot. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. Tudo é servido em HTTPS com certificado da Let's Encrypt (renovação automática), e o HTTP redireciona com 301. `npm run smoke:prod` testa a stack e `npm run verifica:https` confere o certificado de PROD. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
 
 ## Integração contínua
 
