@@ -7,7 +7,9 @@
     "dev": "nodemon --watch src --exec \"node -r @babel/register src/main.js\"",
     "build": "babel src -d dist --ignore \"src/**/*.test.js\"",
     "start": "node dist/main.js",
-    "test": "jest"
+    "test": "jest",
+    "db:migrate": "node -r @babel/register src/database/cli.js migrate",
+    "db:status": "node -r @babel/register src/database/cli.js status"
   },
   "jest": {
     "testEnvironment": "node",
@@ -24,6 +26,7 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.2.7",
     "@nestjs/platform-express": "^11.2.7",
+    "better-sqlite3": "^13.0.3",
     "joi": "^18.2.9",
     "nestjs-pino": "^5.3.1",
     "pino-http": "^11.0.0",

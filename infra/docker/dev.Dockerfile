@@ -11,7 +11,11 @@ USER node
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node backend/package.json backend/
 COPY --chown=node:node frontend/package.json frontend/
-RUN npm ci && npm cache clean --force
+# --ignore-scripts: o better-sqlite3 traz o binário pronto (prebuilds/), mas o npm
+# tenta compilá-lo com node-gyp (sem Python na imagem slim). Os únicos scripts de
+# instalação necessários (frontend) rodam em seguida com npm rebuild.
+RUN npm ci --ignore-scripts && npm rebuild @parcel/watcher unrs-resolver \
+  && npm cache clean --force
 
 # Pasta do banco SQLite: recebe o volume nomeado (já com o dono node).
 RUN mkdir -p backend/data

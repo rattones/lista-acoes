@@ -30,6 +30,7 @@ services:
       CORS_ORIGENS: http://casa-ratton.local:8080,http://casaratton.ddns.net:8080,http://localhost:8080
     volumes:
       - ../backend/src:/app/backend/src
+      - ../backend/migrations:/app/backend/migrations:ro
       - ../backend/babel.config.js:/app/backend/babel.config.js:ro
       - dados:/app/backend/data
     healthcheck:

@@ -7,6 +7,7 @@ const esquema = Joi.object({
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),
   CORS_ORIGENS: Joi.string().required(),
+  DB_ARQUIVO: Joi.string().default('data/monitor.db'),
 }).unknown(true);
 
 // Valida as variáveis de ambiente na inicialização; a API não sobe com configuração inválida.
