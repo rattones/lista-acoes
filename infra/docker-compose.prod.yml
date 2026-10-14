@@ -6,8 +6,17 @@
 #   api.listadecompras.net → backend · app. → app · www. e raiz → landing
 name: lista-acoes
 
+# Rotação dos logs dos containers (tarefa 029): até 5 arquivos de 10 MB por serviço
+# (50 MB); os mais antigos são descartados.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
 services:
   proxy:
+    logging: *logging
     # Imagem oficial (mestre como root): lê a chave da Let's Encrypt, que o certbot
     # grava só para root, e abre as portas 80 e 443; os workers rodam como nginx.
     image: nginx:1.29-alpine
@@ -40,6 +49,7 @@ services:
   # Renova o certificado da Let's Encrypt (desafio HTTP-01 pelo webroot servido no proxy).
   # A emissão inicial é feita por infra/scripts/certificado-inicial.sh.
   certbot:
+    logging: *logging
     image: certbot/certbot:v5.8.0
     restart: unless-stopped
     volumes:
@@ -53,6 +63,7 @@ services:
   # Somente testes (perfil "teste"): certificado autoassinado com os quatro nomes.
   # Uso: docker compose -f infra/docker-compose.prod.yml --profile teste run --rm certificado-teste
   certificado-teste:
+    logging: *logging
     image: alpine/openssl:3.5.9
     profiles: [teste]
     volumes:
@@ -61,6 +72,7 @@ services:
     entrypoint: ['/bin/sh', '/certificado-teste.sh']
 
   backend:
+    logging: *logging
     build:
       context: ..
       dockerfile: infra/docker/backend.Dockerfile
@@ -88,6 +100,7 @@ services:
       start_period: 15s
 
   frontend:
+    logging: *logging
     build:
       context: ..
       dockerfile: infra/docker/frontend.Dockerfile

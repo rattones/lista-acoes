@@ -128,3 +128,27 @@ test('POLICY cobre dados coletados, logs, e-mail, exclusão e direitos do titula
   assert.match(policy, /Gmail/);
   assert.match(policy, /LGPD/);
 });
+
+// Rotação dos logs dos containers (tarefa 029): todo serviço dos composes tem tamanho máximo.
+const configCompose = (arquivo, ...extras) =>
+  JSON.parse(
+    execFileSync(
+      'docker',
+      ['compose', '-f', join(raiz, 'infra', arquivo), ...extras, 'config', '--format', 'json'],
+      { cwd: raiz, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ),
+  );
+
+for (const [arquivo, extras] of [
+  ['docker-compose.dev.yml', []],
+  ['docker-compose.prod.yml', ['--profile', 'teste']],
+]) {
+  test(`${arquivo}: todo serviço tem rotação de log (json-file com max-size e max-file)`, () => {
+    const { services } = configCompose(arquivo, ...extras);
+    for (const [nome, servico] of Object.entries(services)) {
+      assert.equal(servico.logging?.driver, 'json-file', `${nome}: driver de log`);
+      assert.match(servico.logging?.options?.['max-size'] ?? '', /^\d+m$/, `${nome}: max-size`);
+      assert.match(servico.logging?.options?.['max-file'] ?? '', /^\d+$/, `${nome}: max-file`);
+    }
+  });
+}

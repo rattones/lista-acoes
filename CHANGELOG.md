@@ -6,11 +6,14 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Corrigido
 
+- O log de cada requisição da API gravava todos os cabeçalhos, inclusive `Authorization` e `Cookie`, em texto puro. Agora grava só `id`, método, URL, IP, user agent, status e tempo; `senha`, `senha_hash` e `token` em objetos registrados pelo código saem como `[oculto]` (tarefa 029).
+- Logs dos containers cresciam sem limite: todos os serviços dos composes de DEV e PROD usam rotação `json-file` (5 arquivos de 10 MB) (tarefa 029).
 - O `babel-plugin-parameter-decorator` gerava código inválido (`dec(_class.prototype, ...)` antes de `_class` existir) para qualquer decorator de parâmetro, em método ou construtor; foi removido (tarefa 011).
 - Corpo de requisição grande demais respondia 500; agora responde 413 `payload_muito_grande` no formato padrão (tarefa 011).
 
 ### Alterado
 
+- POLICY descreve a retenção dos logs (até 50 MB por serviço) e que credenciais não são gravadas; INSTALL orienta recriar os containers do DEV depois de um `git pull` (arquivos montados um a um não acompanham o git) (tarefa 029).
 - Decorators de parâmetro (`@Body()`, `@Query()`, `@Param()`, `@Inject()` no construtor) passam a ser convertidos por um plugin local no `backend/babel.config.js`, no formato do `__param` do TypeScript (tarefa 011).
 - Limite do corpo JSON da API sobe de 100 KB para 1 MB, para os lotes dos agentes (tarefa 011).
 - `usuarios` nunca devolve `senha_hash`; o `PATCH` aceita só `nome`, `papel` e `ativo` (tarefa 011).
