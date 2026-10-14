@@ -77,6 +77,7 @@ Com Docker, no servidor casa-ratton (API 3000, app 8080, landing 8081, com hot r
 ```sh
 docker compose -f infra/docker-compose.dev.yml up -d --build
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend
+docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w backend -- --email <e-mail> --nome <nome>
 npm run smoke:dev
 ```
 
@@ -86,6 +87,7 @@ Sem Docker, com Node 24 (`nvm use`):
 npm install
 cp backend/.env-example backend/.env
 npm run db:migrate -w backend
+npm run db:admin -w backend -- --email <e-mail> --nome <nome>
 npm run dev
 ```
 
@@ -112,14 +114,15 @@ O CI roda lint, estrutura, testes, builds e o smoke de PROD em todo pull request
 
 NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo `/v1`.
 
-| Comando                         | O que faz                                        |
-| ------------------------------- | ------------------------------------------------ |
-| `npm run dev -w backend`        | Sobe a API com recarga automática (porta `PORT`) |
-| `npm test -w backend`           | Testes unitários e e2e (Jest + Supertest)        |
-| `npm run build -w backend`      | Transpila `src/` para `dist/`                    |
-| `npm run start -w backend`      | Executa a versão transpilada                     |
-| `npm run db:migrate -w backend` | Aplica as migrations pendentes do banco          |
-| `npm run db:status -w backend`  | Lista as migrations aplicadas e pendentes        |
+| Comando                                                         | O que faz                                        |
+| --------------------------------------------------------------- | ------------------------------------------------ |
+| `npm run dev -w backend`                                        | Sobe a API com recarga automática (porta `PORT`) |
+| `npm test -w backend`                                           | Testes unitários e e2e (Jest + Supertest)        |
+| `npm run build -w backend`                                      | Transpila `src/` para `dist/`                    |
+| `npm run start -w backend`                                      | Executa a versão transpilada                     |
+| `npm run db:migrate -w backend`                                 | Aplica as migrations pendentes do banco          |
+| `npm run db:status -w backend`                                  | Lista as migrations aplicadas e pendentes        |
+| `npm run db:admin -w backend -- --email <e-mail> --nome <nome>` | Cria um usuário admin (pede a senha)             |
 
 | Rota             | Resposta                                |
 | ---------------- | --------------------------------------- |
@@ -132,6 +135,9 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 - **CORS:** liberado somente para as origens em `CORS_ORIGENS`.
 - **Banco:** SQLite (better-sqlite3, SQL puro) no arquivo `DB_ARQUIVO` (padrão `data/monitor.db`). O `DatabaseModule` abre uma conexão única com `foreign_keys = ON`, `journal_mode = WAL` e `busy_timeout = 5000`, injetada com `@Dependencies(CONEXAO_DB)`, e a fecha quando a API encerra.
 - **Migrations:** arquivos `backend/migrations/NNNN_descricao.sql`, aplicados em ordem pelo `db:migrate`, cada um em uma transação e registrado em `schema_migrations (versao, nome, aplicada_em)`. Migration já registrada não roda de novo; se uma falhar, ela é desfeita e as seguintes não rodam. A API não aplica migrations ao iniciar.
+- **Schema** (`0001_schema_inicial.sql`): `ativos`, `execucoes`, `sinais` (ligados a `ativos` por `ativo_id`), `precos_diarios`, `noticias`, `usuarios` e `agentes_tokens`, todas com exclusão lógica por `excluido_em` (NULL = registro ativo), e as views `v_ativos_monitorados` (`status = 'ativo'`), `v_resumo_atual`, `v_historico_nota` e `v_proximos_eventos`, que ignoram registros excluídos. Apagar fisicamente um ativo apaga seus preços e sinais (notícias perdem o vínculo); apagar um usuário apaga suas API keys. Referência completa: `.context/SCHEMA.sql`.
+- **Carga inicial** (`0002_carga_inicial.sql`): os 6 ativos do início do projeto (CSCO, GOOGL, ORCL, PETR4, TSLA e USDT-BRL). O primeiro admin não é versionado: é criado com `db:admin`.
+- **Senhas:** hash argon2id (`@node-rs/argon2`) e mínimo de 10 caracteres (`src/auth/senha.js`).
 
 ## Frontend (app e landing page)
 
