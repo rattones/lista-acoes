@@ -11,6 +11,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- CI com GitHub Actions (`.github/workflows/ci.yml`) a cada push na `main` e em pull requests: lint e estrutura, testes e build do backend, testes e build do frontend, e build das imagens de PROD com smoke test da stack, em jobs paralelos (tarefa 007).
+- Badge de status do CI no README (tarefa 007).
+- Proteção da `main`: os quatro jobs do CI são checks obrigatórios (também para administradores), a branch precisa estar atualizada antes do merge, e force push e exclusão estão bloqueados (tarefa 007).
 - Stack de PROD em `infra/docker-compose.prod.yml`: `proxy` (Nginx, único com porta publicada, `PROXY_PORTA`, padrão 80), `backend` e `frontend` na rede interna, com `restart: unless-stopped`, healthchecks e volume persistente do SQLite (tarefa 005).
 - Dockerfiles de produção multi-stage: `infra/docker/backend.Dockerfile` (Node 24 slim, só dependências de produção, sem root) e `infra/docker/frontend.Dockerfile` (build do Vite servido por `nginx-unprivileged`) (tarefa 005).
 - Proxy Nginx (`infra/nginx/proxy.conf`) com roteamento por subdomínio (`api.`, `app.`, `www.` e raiz), `444` para hosts desconhecidos, gzip, cabeçalhos de segurança, CSP por host e `X-Request-Id` repassado à API (tarefa 005).

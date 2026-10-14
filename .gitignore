@@ -13,6 +13,7 @@ node_modules/
 .env
 .env.*
 !.env-example
+infra/.env-vps
 
 # bancos SQLite
 *.db
