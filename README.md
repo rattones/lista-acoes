@@ -1,5 +1,7 @@
 # Lista de Ações
 
+[![CI](https://github.com/rattones/lista-acoes/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rattones/lista-acoes/actions/workflows/ci.yml)
+
 Gerenciador de ações: acompanha o mercado, armazena os dados coletados por agentes e apoia a decisão de compra e venda.
 
 ## Estrutura
@@ -73,5 +75,18 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 ## Produção (Docker + Nginx)
 
 `docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (porta 80), a API e o frontend. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. `npm run smoke:prod` testa os três hosts. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
+
+## Integração contínua
+
+O GitHub Actions (`.github/workflows/ci.yml`) roda a cada push na `main` e em todo pull request, com quatro jobs em paralelo:
+
+| Job                        | O que verifica                                                           |
+| -------------------------- | ------------------------------------------------------------------------ |
+| Lint e estrutura           | `npm run lint` e `npm run test:estrutura`                                |
+| Testes do backend          | `npm test -w backend` e `npm run build -w backend`                       |
+| Testes e build do frontend | `npm test -w frontend` e `npm run build -w frontend`                     |
+| Imagens e smoke de PROD    | Build das imagens de PROD (sem push), stack no ar e `npm run smoke:prod` |
+
+Uma falha em qualquer job reprova o PR.
 
 Instalação e configuração: [INSTALL.md](INSTALL.md). Histórico de mudanças: [CHANGELOG.md](CHANGELOG.md).
