@@ -63,3 +63,53 @@ describe('FiltroErros', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 });
+
+describe('FiltroErros com erros de restrição do SQLite', () => {
+  const resposta = () => {
+    const res = { status: jest.fn(() => res), json: jest.fn() };
+    return res;
+  };
+  const host = (res) => ({
+    switchToHttp: () => ({ getResponse: () => res, getRequest: () => ({ id: 'req-1' }) }),
+  });
+  const erroSqlite = (code, message) => Object.assign(new Error(message), { code });
+
+  it('UNIQUE vira 409 conflito com os campos', () => {
+    const res = resposta();
+    new FiltroErros({ error: jest.fn() }).catch(
+      erroSqlite(
+        'SQLITE_CONSTRAINT_UNIQUE',
+        'UNIQUE constraint failed: precos_diarios.ativo_id, precos_diarios.data',
+      ),
+      host(res),
+    );
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({
+      erro: 'conflito',
+      mensagem: expect.any(String),
+      detalhes: [
+        { campo: 'ativo_id', mensagem: expect.any(String) },
+        { campo: 'data', mensagem: expect.any(String) },
+      ],
+    });
+  });
+
+  it('FOREIGN KEY vira 422 entidade_invalida', () => {
+    const res = resposta();
+    new FiltroErros({ error: jest.fn() }).catch(
+      erroSqlite('SQLITE_CONSTRAINT_FOREIGNKEY', 'FOREIGN KEY constraint failed'),
+      host(res),
+    );
+    expect(res.status).toHaveBeenCalledWith(422);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ erro: 'entidade_invalida' }));
+  });
+
+  it('CHECK vira 400 requisicao_invalida', () => {
+    const res = resposta();
+    new FiltroErros({ error: jest.fn() }).catch(
+      erroSqlite('SQLITE_CONSTRAINT_CHECK', 'CHECK constraint failed: nota BETWEEN 1 AND 5'),
+      host(res),
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});

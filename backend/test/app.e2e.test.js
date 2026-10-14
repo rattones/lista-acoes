@@ -56,4 +56,30 @@ describe('App (e2e)', () => {
       .set('Origin', 'http://outro.site');
     expect(negada.headers['access-control-allow-origin']).toBeUndefined();
   });
+
+  it('JSON malformado → 400 no formato padrão (não 500)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/v1/ativos')
+      .set('Content-Type', 'application/json')
+      .send('{"ativo": ');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      erro: 'requisicao_invalida',
+      mensagem: expect.any(String),
+      detalhes: null,
+    });
+  });
+
+  it('corpo acima de 1 MB → 413 no formato padrão (não 500)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/v1/ativos')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ observacao: 'x'.repeat(1024 * 1024 + 1) }));
+    expect(res.status).toBe(413);
+    expect(res.body).toEqual({
+      erro: 'payload_muito_grande',
+      mensagem: expect.any(String),
+      detalhes: null,
+    });
+  });
 });
