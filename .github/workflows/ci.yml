@@ -1,0 +1,75 @@
+# CI (tarefa 007): lint, testes e build a cada push e pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Um push novo na mesma branch/PR cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint e estrutura
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:estrutura
+
+  backend:
+    name: Testes do backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test -w backend
+      - run: npm run build -w backend
+
+  frontend:
+    name: Testes e build do frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test -w frontend
+      - run: npm run build -w frontend
+
+  # Valida os Dockerfiles de PROD (sem push) e sobe a stack para o smoke test.
+  docker:
+    name: Imagens e smoke de PROD
+    runs-on: ubuntu-latest
+    env:
+      PROXY_PORTA: 8088
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: docker compose -f infra/docker-compose.prod.yml build
+      - run: docker compose -f infra/docker-compose.prod.yml up -d --wait --wait-timeout 120
+      - run: npm run smoke:prod
+      - name: Logs da stack (em caso de falha)
+        if: failure()
+        run: docker compose -f infra/docker-compose.prod.yml logs --no-color
+      - if: always()
+        run: docker compose -f infra/docker-compose.prod.yml down -v
