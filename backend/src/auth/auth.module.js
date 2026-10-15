@@ -13,13 +13,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { SkipThrottle, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { ValidacaoPipe } from '../comum/validacao.pipe';
 import { MailModule } from '../mail/mail.module';
 import { AuthService, REFRESH_SEGUNDOS } from './auth.service';
-import { Publico } from './decorators';
+import { ConvitesService } from './convites.service';
+import { Papeis, Publico } from './decorators';
 import { AutenticacaoGuard, PapeisGuard } from './guards';
+import { LIMITES, limitar } from './limites';
 import { RecuperacaoSenhaService } from './recuperacao-senha.service';
 
 const COOKIE_REFRESH = 'refresh_token';
@@ -31,21 +33,16 @@ const esquemaRecuperar = Joi.object({ email: email() });
 const esquemaValidar = Joi.object({ token: token() });
 const esquemaRedefinir = Joi.object({ token: token(), senha: Joi.string().max(200).required() });
 
-// Limites (por IP, salvo o de e-mail). Cada rota pula os limites que não são dela.
-const LIMITES = [
-  { name: 'login', ttl: 60_000, limit: 10 },
-  { name: 'recuperacao_ip', ttl: 15 * 60_000, limit: 10 },
-  {
-    name: 'recuperacao_email',
-    ttl: 60 * 60_000,
-    limit: 3,
-    getTracker: (req) =>
-      String(req.body?.email ?? '')
-        .trim()
-        .toLowerCase() || `sem-email:${req.ip}`,
-  },
-];
-const SOMENTE_LOGIN = { recuperacao_ip: true, recuperacao_email: true };
+const esquemaConvidar = Joi.object({
+  email: Joi.string().trim().lowercase().email().max(254).required(),
+  papel: Joi.string().valid('admin', 'leitor').required(),
+});
+const esquemaAceitar = Joi.object({
+  token: token(),
+  nome: Joi.string().trim().min(1).max(100).required(),
+  senha: Joi.string().max(200).required(),
+  email_confirmado: Joi.string().trim().email().max(254).required(),
+});
 
 const MENSAGEM_RECUPERACAO =
   'Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.';
@@ -84,7 +81,7 @@ export class AuthController {
 
   @Publico()
   @UseGuards(ThrottlerGuard)
-  @SkipThrottle(SOMENTE_LOGIN)
+  @limitar('login')
   @Post('login')
   @HttpCode(200)
   async login(@Body() corpo, @Res({ passthrough: true }) res) {
@@ -114,7 +111,7 @@ export class AuthController {
   // Recuperação de senha (tarefa 014). O token vai sempre no corpo, nunca na URL (logs).
   @Publico()
   @UseGuards(ThrottlerGuard)
-  @SkipThrottle({ login: true })
+  @limitar('recuperacao_ip', 'recuperacao_email')
   @Post('recuperar-senha')
   @HttpCode(202)
   recuperar(@Body() corpo) {
@@ -125,7 +122,7 @@ export class AuthController {
 
   @Publico()
   @UseGuards(ThrottlerGuard)
-  @SkipThrottle({ login: true, recuperacao_email: true })
+  @limitar('recuperacao_ip')
   @Post('redefinir-senha/validar')
   @HttpCode(200)
   validarRedefinicao(@Body() corpo) {
@@ -135,7 +132,7 @@ export class AuthController {
 
   @Publico()
   @UseGuards(ThrottlerGuard)
-  @SkipThrottle({ login: true, recuperacao_email: true })
+  @limitar('recuperacao_ip')
   @Post('redefinir-senha')
   @HttpCode(200)
   async redefinir(@Body() corpo) {
@@ -145,8 +142,44 @@ export class AuthController {
   }
 }
 
+// Convites (tarefa 015): só admin convida; validar e aceitar são públicos, com o token
+// sempre no corpo (nunca na URL, que vai para os logs).
+@Controller('convites')
+@Dependencies(ConvitesService)
+export class ConvitesController {
+  constructor(convites) {
+    this.convites = convites;
+  }
+
+  @Papeis('admin')
+  @Post()
+  convidar(@Body() corpo, @Req() req) {
+    return this.convites.convidar(
+      req.usuario,
+      new ValidacaoPipe(esquemaConvidar).transform(corpo ?? {}),
+    );
+  }
+
+  @Publico()
+  @UseGuards(ThrottlerGuard)
+  @limitar('convite_ip')
+  @Post('validar')
+  @HttpCode(200)
+  validar(@Body() corpo) {
+    return this.convites.validar(new ValidacaoPipe(esquemaValidar).transform(corpo ?? {}).token);
+  }
+
+  @Publico()
+  @UseGuards(ThrottlerGuard)
+  @limitar('convite_ip')
+  @Post('aceitar')
+  aceitar(@Body() corpo) {
+    return this.convites.aceitar(new ValidacaoPipe(esquemaAceitar).transform(corpo ?? {}));
+  }
+}
+
 // Autenticação (tarefa 012): JWT de acesso + refresh em cookie, guards globais de
-// autenticação e papéis, rate limit no login (10 por minuto por IP) e recuperação de senha.
+// autenticação e papéis, rate limits, recuperação de senha (014) e convites (015).
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -159,10 +192,11 @@ export class AuthController {
     }),
     MailModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, ConvitesController],
   providers: [
     AuthService,
     RecuperacaoSenhaService,
+    ConvitesService,
     { provide: APP_GUARD, useClass: AutenticacaoGuard },
     { provide: APP_GUARD, useClass: PapeisGuard },
   ],

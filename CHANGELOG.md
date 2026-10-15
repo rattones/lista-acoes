@@ -13,6 +13,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Rate limits nomeados centralizados em `src/auth/limites.js`, com o decorator `@limitar(...)`: cada rota declara só os limites que valem para ela (tarefa 015).
+- POLICY: o convite leva o nome de quem convidou e nada é guardado antes do aceite (tarefa 015).
 - POLICY: a redefinição de senha encerra as sessões abertas e o pedido não revela se o e-mail está cadastrado (tarefa 014).
 - Composes definem `APP_URL` (DEV `http://casaratton.ddns.net:8080`; PROD o mesmo `VITE_APP_URL` do app); o CI grava um SMTP fictício no `backend/.env` do smoke de PROD (tarefa 013).
 - POLICY: o log de envio guarda só o tipo de e-mail e o destinatário mascarado (tarefa 013).
@@ -37,6 +39,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Convites (tarefa 015): `POST /v1/convites` (admin; envia o link e devolve `{ email, papel, expira_em }`), `POST /v1/convites/validar` e `POST /v1/convites/aceitar` (públicos), com link assinado sem estado válido por 72 horas, e-mail do novo usuário vindo do token (só confirmado) e papel escolhido pelo admin.
+- Convite deixa de valer quando o e-mail é cadastrado (409) ou quando quem convidou deixa de ser um admin ativo (400) (tarefa 015).
+- Rate limit de 20 validações ou aceites de convite por 15 minutos por IP (tarefa 015).
 - Recuperação de senha (tarefa 014): `POST /v1/auth/recuperar-senha` (sempre 202; envia o link só para usuário ativo, em segundo plano), `POST /v1/auth/redefinir-senha/validar` (200, 400 `token_invalido` ou 410 `token_expirado`) e `POST /v1/auth/redefinir-senha` (grava a nova senha, zera o bloqueio e encerra as sessões).
 - Tokens de link assinados sem estado (`src/auth/token-assinado.js`): payload em base64url + HMAC-SHA256 com chave derivada por finalidade; o de recuperação usa o `senha_hash` atual, então vale uma vez só e expira em 24 horas (tarefa 014).
 - Rate limit da recuperação: 3 pedidos por hora por e-mail e 10 por 15 minutos por IP (tarefa 014).

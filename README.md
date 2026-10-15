@@ -133,23 +133,27 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 
 ### Autenticação e permissões
 
-Login por e-mail e senha. Toda rota exige `Authorization: Bearer <token_acesso>`, exceto `GET /v1/health`, login, refresh e as rotas de recuperação de senha.
+Login por e-mail e senha. Toda rota exige `Authorization: Bearer <token_acesso>`, exceto `GET /v1/health`, login, refresh, as rotas de recuperação de senha e a validação e o aceite de convites.
 
-| Rota                                    | O que faz                                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/auth/login`                   | `{ email, senha }` → `{ token_acesso, tipo: "Bearer", expira_em_segundos: 900, usuario }` + cookie do refresh |
-| `POST /v1/auth/refresh`                 | Com o cookie `refresh_token`: novo token de acesso e cookie renovado                                          |
-| `POST /v1/auth/logout`                  | Encerra **todas** as sessões do usuário e apaga o cookie (204)                                                |
-| `GET /v1/auth/eu`                       | `{ id, email, nome, papel }` do usuário logado                                                                |
-| `POST /v1/auth/recuperar-senha`         | `{ email }` → sempre 202; se o e-mail é de um usuário ativo, envia o link de redefinição                      |
-| `POST /v1/auth/redefinir-senha/validar` | `{ token }` → 200 `{ email }`; 400 `token_invalido`; 410 `token_expirado`                                     |
-| `POST /v1/auth/redefinir-senha`         | `{ token, senha }` → grava a nova senha, zera o bloqueio e encerra as sessões                                 |
+| Rota                                    | O que faz                                                                                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /v1/auth/login`                   | `{ email, senha }` → `{ token_acesso, tipo: "Bearer", expira_em_segundos: 900, usuario }` + cookie do refresh                        |
+| `POST /v1/auth/refresh`                 | Com o cookie `refresh_token`: novo token de acesso e cookie renovado                                                                 |
+| `POST /v1/auth/logout`                  | Encerra **todas** as sessões do usuário e apaga o cookie (204)                                                                       |
+| `GET /v1/auth/eu`                       | `{ id, email, nome, papel }` do usuário logado                                                                                       |
+| `POST /v1/auth/recuperar-senha`         | `{ email }` → sempre 202; se o e-mail é de um usuário ativo, envia o link de redefinição                                             |
+| `POST /v1/auth/redefinir-senha/validar` | `{ token }` → 200 `{ email }`; 400 `token_invalido`; 410 `token_expirado`                                                            |
+| `POST /v1/auth/redefinir-senha`         | `{ token, senha }` → grava a nova senha, zera o bloqueio e encerra as sessões                                                        |
+| `POST /v1/convites` (admin)             | `{ email, papel }` → envia o convite (201 `{ email, papel, expira_em }`); 409 se o e-mail já está cadastrado; 503 se o e-mail falhar |
+| `POST /v1/convites/validar`             | `{ token }` → 200 `{ email, papel, expira_em }`; 400 `token_invalido`; 410 `token_expirado`; 409 se o e-mail já foi cadastrado       |
+| `POST /v1/convites/aceitar`             | `{ token, nome, senha, email_confirmado }` → cria o usuário com o e-mail e o papel do convite (201)                                  |
 
 - **Tokens:** JWT de acesso de 15 minutos; refresh token de 7 dias, só em cookie `httpOnly`, `SameSite=Strict`, `Path=/v1/auth` e `Secure` em produção (`COOKIE_SEGURO`). Assinados com `JWT_SEGREDO`.
 - **Sessão:** os tokens levam a `versao_sessao` do usuário. A cada requisição, a API confere no banco se o usuário existe, está ativo, não foi excluído e tem a mesma versão. Logout (e, nas próximas tarefas, troca de senha) incrementa a versão e derruba na hora os tokens já emitidos. Papel, desativação e exclusão valem imediatamente.
 - **Bloqueio:** 5 senhas erradas seguidas bloqueiam a conta por 15 minutos (423 `bloqueado`). Durante o bloqueio, nem a senha certa entra, e a senha não é conferida. Login certo zera as tentativas e registra `ultimo_login_em`.
 - **Erros:** e-mail inexistente, senha errada, usuário inativo ou excluído → o mesmo 401 `E-mail ou senha inválidos`, com tempo de resposta equivalente.
 - **Recuperação de senha:** link sem estado no banco, válido por 24 horas: `APP_URL/redefinir-senha#t=<token>`. O token (`src/auth/token-assinado.js`) é o payload `{ id, email, exp }` em base64url mais um HMAC-SHA256 com chave derivada do `JWT_SEGREDO` e do `senha_hash` atual: trocar a senha invalida todos os links já enviados. O token vai no fragmento do link e no corpo das requisições, nunca na URL (que vai para os logs). O pedido responde 202 na hora, exista ou não o e-mail, e o envio acontece em segundo plano. Limites: 3 pedidos por hora por e-mail e 10 por 15 minutos por IP.
+- **Convites:** só admin convida e escolhe o papel. Link sem estado, válido por 72 horas: `APP_URL/cadastro#c=<token>`, com `{ email, papel, por, exp }` assinado por uma chave derivada do `JWT_SEGREDO` só para convites. O e-mail do novo usuário vem do token: o formulário só o confirma (`email_confirmado`). O convite deixa de valer quando expira, quando o e-mail é cadastrado ou quando quem convidou deixa de ser um admin ativo. Não há cancelamento, e reenviar gera um link novo sem invalidar o anterior. Limite de 20 validações ou aceites por 15 minutos por IP.
 - **Rate limit:** 10 tentativas de login por minuto por IP (429). Atrás do Nginx, o IP vem do `X-Forwarded-For` (`CONFIAR_PROXY=1` em PROD).
 
 | Papel    | Pode                                                                                                                  |
