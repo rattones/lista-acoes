@@ -1,6 +1,6 @@
 import { SkipThrottle } from '@nestjs/throttler';
 
-// Rate limits nomeados (tarefas 012, 014 e 015). Por padrão o tracker é o IP do cliente.
+// Rate limits nomeados (tarefas 012, 014, 015 e 017). Por padrão o tracker é o IP do cliente.
 export const LIMITES = [
   { name: 'login', ttl: 60_000, limit: 10 },
   { name: 'recuperacao_ip', ttl: 15 * 60_000, limit: 10 },
@@ -14,6 +14,8 @@ export const LIMITES = [
         .toLowerCase() || `sem-email:${req.ip}`,
   },
   { name: 'convite_ip', ttl: 15 * 60_000, limit: 20 },
+  // Rotas que conferem a senha atual de quem já está logado (tarefa 017).
+  { name: 'senha_atual', ttl: 15 * 60_000, limit: 10 },
 ];
 
 // O ThrottlerGuard aplica todos os limites a cada rota; este decorator deixa só os listados.
