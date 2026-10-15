@@ -10,7 +10,8 @@
     "test": "jest",
     "db:migrate": "node -r @babel/register src/database/cli.js migrate",
     "db:status": "node -r @babel/register src/database/cli.js status",
-    "db:admin": "node -r @babel/register src/database/cli.js admin"
+    "db:admin": "node -r @babel/register src/database/cli.js admin",
+    "email:teste": "node -r @babel/register src/mail/enviar-teste.js"
   },
   "jest": {
     "testEnvironment": "node",
@@ -34,6 +35,7 @@
     "cookie-parser": "^1.4.7",
     "joi": "^18.2.9",
     "nestjs-pino": "^5.3.1",
+    "nodemailer": "^10.1.1",
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"

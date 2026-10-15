@@ -38,6 +38,8 @@ services:
       NODE_ENV: development
       PORT: 3000
       CORS_ORIGENS: http://casa-ratton.local:8080,http://casaratton.ddns.net:8080,http://localhost:8080
+      # Base dos links enviados por e-mail (acessível de fora da rede).
+      APP_URL: http://casaratton.ddns.net:8080
     volumes:
       - ../backend/src:/app/backend/src
       - ../backend/migrations:/app/backend/migrations:ro

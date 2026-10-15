@@ -19,6 +19,9 @@ describe('validarConfig', () => {
       DB_ARQUIVO: 'data/monitor.db',
       CONFIAR_PROXY: 0,
       COOKIE_SEGURO: false,
+      SMTP_HOST: 'smtp.gmail.com',
+      SMTP_PORT: 465,
+      APP_URL: 'http://localhost:8080',
     });
   });
 
@@ -37,8 +40,32 @@ describe('validarConfig', () => {
   });
 
   it('cookie seguro por padrão só em produção', () => {
-    expect(validarConfig({ ...minima, NODE_ENV: 'production' }).COOKIE_SEGURO).toBe(true);
+    const producao = {
+      ...minima,
+      NODE_ENV: 'production',
+      SMTP_USER: 'lista@gmail.com',
+      SMTP_PASS: 'senha-de-app',
+      MAIL_FROM: 'lista@gmail.com',
+      APP_URL: 'https://app.listadecompras.net',
+    };
+    expect(validarConfig(producao).COOKIE_SEGURO).toBe(true);
     expect(validarConfig({ ...minima, NODE_ENV: 'development' }).COOKIE_SEGURO).toBe(false);
     expect(validarConfig({ ...minima, COOKIE_SEGURO: 'true' }).COOKIE_SEGURO).toBe(true);
+  });
+
+  it('em produção exige SMTP_USER, SMTP_PASS, MAIL_FROM e APP_URL', () => {
+    const producao = { ...minima, NODE_ENV: 'production' };
+    expect(() => validarConfig(producao)).toThrow(
+      /SMTP_USER.*SMTP_PASS.*MAIL_FROM.*APP_URL|SMTP_USER/s,
+    );
+    const completa = {
+      ...producao,
+      SMTP_USER: 'lista@gmail.com',
+      SMTP_PASS: 'abcd efgh ijkl mnop',
+      MAIL_FROM: 'Lista de Ações <lista@gmail.com>',
+      APP_URL: 'https://app.listadecompras.net',
+    };
+    expect(() => validarConfig(completa)).not.toThrow();
+    expect(() => validarConfig({ ...completa, APP_URL: 'nao-e-url' })).toThrow(/APP_URL/);
   });
 });

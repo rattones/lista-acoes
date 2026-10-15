@@ -125,6 +125,7 @@ NestJS em JavaScript (decorators via Babel 7), com todas as rotas sob o prefixo 
 | `npm run db:migrate -w backend`                                 | Aplica as migrations pendentes do banco          |
 | `npm run db:status -w backend`                                  | Lista as migrations aplicadas e pendentes        |
 | `npm run db:admin -w backend -- --email <e-mail> --nome <nome>` | Cria um usuário admin (pede a senha)             |
+| `npm run email:teste -w backend -- --para <e-mail>`             | Envia um e-mail de teste pelo SMTP configurado   |
 
 | Rota             | Resposta                                |
 | ---------------- | --------------------------------------- |
@@ -184,6 +185,7 @@ Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `
 - **Configuração:** variáveis de ambiente validadas na inicialização; a API não sobe se faltar alguma obrigatória (ver `backend/.env-example`).
 - **Logs:** JSON (pino), com request id em cada linha; o `x-request-id` recebido é reaproveitado ou gerado e devolvido na resposta. A linha de cada requisição tem só `id`, `method`, `url`, `remoteAddress`, `userAgent`, o `statusCode` e o `responseTime`: nenhum cabeçalho é gravado, então credenciais (`Authorization`, `Cookie`, `X-Api-Key`, `Set-Cookie`) nunca chegam ao log. Campos `senha`, `senha_hash` e `token` em objetos registrados pelo código saem como `[oculto]` (`src/comum/log.js`).
 - **Rotação dos logs:** todos os containers (DEV e PROD) usam `json-file` com até 5 arquivos de 10 MB por serviço.
+- **E-mail:** `MailModule` com `MailService.enviar({ para, assunto, template, dados })`, via Gmail SMTP com senha de app (nodemailer). Templates `convite` e `recuperacao-senha` (HTML e texto, em `src/mail/templates.js`, com os dados escapados). `montarLink(caminho, { t })` monta o link a partir de `APP_URL`, com os parâmetros no fragmento (`#t=...`), que o navegador não envia ao servidor. Falha de envio lança `ErroEnvioEmail` (503 `falha_envio_email` se não for tratado). O log registra o template e o destinatário mascarado (`f***@dominio`), nunca o conteúdo. Sem `SMTP_USER`/`SMTP_PASS` (fora de produção), o envio fica desligado.
 - **CORS:** liberado somente para as origens em `CORS_ORIGENS`.
 - **Banco:** SQLite (better-sqlite3, SQL puro) no arquivo `DB_ARQUIVO` (padrão `data/monitor.db`). O `DatabaseModule` abre uma conexão única com `foreign_keys = ON`, `journal_mode = WAL` e `busy_timeout = 5000`, injetada com `@Dependencies(CONEXAO_DB)`, e a fecha quando a API encerra.
 - **Migrations:** arquivos `backend/migrations/NNNN_descricao.sql`, aplicados em ordem pelo `db:migrate`, cada um em uma transação e registrado em `schema_migrations (versao, nome, aplicada_em)`. Migration já registrada não roda de novo; se uma falhar, ela é desfeita e as seguintes não rodam. A API não aplica migrations ao iniciar.
