@@ -27,6 +27,13 @@ const esquema = Joi.object({
       then: Joi.required(),
       otherwise: Joi.optional().default('http://localhost:8080'),
     }),
+  // Wrapper de dados de ativos (tarefa 018): chamadas ao Yahoo, à Binance e ao CoinGecko.
+  WRAPPER_USER_AGENT: Joi.string().default(
+    'Mozilla/5.0 (compatible; lista-acoes/1.0; +https://www.listadecompras.net)',
+  ),
+  WRAPPER_TIMEOUT_MS: Joi.number().integer().min(100).default(8000),
+  WRAPPER_TENTATIVAS: Joi.number().integer().min(1).max(5).default(3),
+  WRAPPER_CACHE_SEGUNDOS: Joi.number().integer().min(0).default(60),
 }).unknown(true);
 
 // Valida as variáveis de ambiente na inicialização; a API não sobe com configuração inválida.

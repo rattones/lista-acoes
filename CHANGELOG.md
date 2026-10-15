@@ -13,6 +13,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- POLICY: o wrapper consulta Yahoo, Binance e CoinGecko enviando só o código do ativo, sem dados pessoais (tarefa 018).
 - POLICY: a exclusão de conta pede a senha, apaga cadastro e API keys e não vale para o último admin ativo (tarefa 017).
 - O repositório genérico do CRUD aceita a opção `apresentar`, para ajustar o que sai da API (ex.: `agentes_tokens.escopos` em array) (tarefa 016).
 - Rate limits nomeados centralizados em `src/auth/limites.js`, com o decorator `@limitar(...)`: cada rota declara só os limites que valem para ela (tarefa 015).
@@ -41,6 +42,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Wrapper de dados de ativos (tarefa 018): `POST /v1/ativos/pre-visualizar { url }` monta os campos de `ativos` e a última cotação a partir de um link do Google Finance ou do Yahoo Finance, sem gravar; `POST /v1/ativos/:id/atualizar-dados` refaz a busca e atualiza o cadastro. Só admin.
+- Fontes do wrapper: Yahoo (ações, ETFs, índices e moedas), Binance e CoinGecko (cripto e stablecoins), com mapa de bolsas Google ↔ Yahoo e cliente HTTP com timeout, retry com backoff e cache curto. Erros 400 `url_nao_suportada`, 422 `ativo_nao_encontrado` e 502 `fonte_indisponivel` (tarefa 018).
+- Variáveis `WRAPPER_USER_AGENT`, `WRAPPER_TIMEOUT_MS`, `WRAPPER_TENTATIVAS` e `WRAPPER_CACHE_SEGUNDOS`, todas opcionais (tarefa 018).
 - Edição do próprio perfil (tarefa 017): `PATCH /v1/auth/eu { nome?, senha_atual?, nova_senha? }`; o e-mail não muda (400). Trocar a senha exige a atual, encerra as outras sessões e devolve uma sessão nova.
 - Exclusão permanente da própria conta (tarefa 017): `DELETE /v1/auth/eu { senha }` apaga o usuário e, em cascata, as API keys que ele criou; senha errada → 403 `senha_incorreta`; o último admin ativo não pode se excluir (409 `ultimo_admin`). Limite de 10 confirmações de senha por 15 minutos por IP.
 - Teste do schema garante que toda chave estrangeira para `usuarios` é `ON DELETE CASCADE` (tarefa 017).

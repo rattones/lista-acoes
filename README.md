@@ -229,6 +229,28 @@ Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `
 - **Carga inicial** (`0002_carga_inicial.sql`): os 6 ativos do início do projeto (CSCO, GOOGL, ORCL, PETR4, TSLA e USDT-BRL). O primeiro admin não é versionado: é criado com `db:admin`.
 - **Senhas:** hash argon2id (`@node-rs/argon2`) e mínimo de 10 caracteres (`src/auth/senha.js`).
 
+### Wrapper de dados de ativos
+
+Monta o cadastro de um ativo a partir do link da página dele no Google Finance ou no Yahoo Finance. Só admin usa.
+
+| Rota                                  | O que faz                                                                                                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/ativos/pre-visualizar`      | `{ url }` → `{ ativo, cotacao }`: os campos de `ativos` preenchidos (para enviar ao `POST /v1/ativos`) e a última cotação. **Não grava nada**        |
+| `POST /v1/ativos/:id/atualizar-dados` | Refaz a busca pela `url_pagina` e atualiza `nome`, `tipo`, `bolsa`, tickers e URLs; código, `status` e `observacao` não mudam → `{ ativo, cotacao }` |
+
+| Link aceito                                                               | Exemplo                      |
+| ------------------------------------------------------------------------- | ---------------------------- |
+| `google.com/finance/quote/{TICKER}:{BOLSA}` (também `google.com.br`)      | `PETR4:BVMF`, `CSCO:NASDAQ`  |
+| `google.com/finance/quote/{BASE}-{COTACAO}`                               | `USDT-BRL`, `USD-BRL`        |
+| `finance.yahoo.com/quote/{SÍMBOLO}` (também `br.financas.yahoo.com` etc.) | `PETR4.SA`, `BRL=X`, `^BVSP` |
+
+- **Fontes:** o Google Finance não tem API: da URL só sai o ticker. Ações, ETFs, índices e moedas → Yahoo (chart API; o tipo vem do `instrumentType`). Cripto e stablecoins → histórico na Binance e cotação no CoinGecko; sem o par na Binance, o histórico vem do Yahoo (só para pares em dólar). Ações da B3 usam o Yahoo (`.SA`), não a brapi.
+- **Bolsas:** mapa Google ↔ Yahoo em `src/wrapper/urls.js` (`BVMF`→`.SA`, `NASDAQ`/`NYSE`/`NYSEARCA` sem sufixo, `TSE`→`.TO`, `LON`→`.L`...) e os índices `IBOV`, `.INX`, `.DJI` e `.IXIC`. Bolsa sem mapa → 400.
+- **Substitutos:** o Yahoo não cota stablecoin contra outra moeda nem cripto fora do dólar: `USDT-BRL` usa `BRL=X` e `BTC-BRL` usa `BTC-USD` nos indicadores, com uma `observacao` explicando.
+- **Erros:** link de outro site ou fora do formato → 400 `url_nao_suportada`; ticker que a fonte não conhece → 422 `ativo_nao_encontrado`; fonte fora do ar → 502 `fonte_indisponivel`, com o nome da fonte.
+- **Cliente HTTP** (`src/wrapper/cliente-http.js`): timeout por tentativa (`WRAPPER_TIMEOUT_MS`), até `WRAPPER_TENTATIVAS` tentativas com backoff exponencial em erro de rede, 429 e 5xx, cache em memória de `WRAPPER_CACHE_SEGUNDOS` para respostas 2xx e `User-Agent` configurável (`WRAPPER_USER_AGENT`).
+- **Testes:** usam respostas reais gravadas em `backend/test/fixtures/wrapper/` e não vão à rede.
+
 ## Frontend (app e landing page)
 
 Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com builds separados, cada um servido pelo seu host:
