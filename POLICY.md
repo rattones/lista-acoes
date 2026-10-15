@@ -46,7 +46,7 @@ Os logs ficam no próprio servidor, não são compartilhados e não são usados 
 O sistema envia e-mails apenas para:
 
 - **Convite:** link de cadastro, válido por 72 horas, enviado ao e-mail escolhido pelo admin.
-- **Recuperação de senha:** link válido por 24 horas, enviado quando você pede. Ele deixa de funcionar quando a senha é trocada.
+- **Recuperação de senha:** link válido por 24 horas, enviado quando você pede. Ele deixa de funcionar quando a senha é trocada, e a troca encerra as sessões abertas em todos os dispositivos. O pedido tem a mesma resposta exista ou não uma conta com o e-mail informado.
 
 O registro técnico de cada envio guarda só o tipo de e-mail e o destinatário mascarado (ex.: `f***@dominio.com`), nunca o conteúdo nem o link.
 
