@@ -13,6 +13,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- POLICY: a redefinição de senha encerra as sessões abertas e o pedido não revela se o e-mail está cadastrado (tarefa 014).
 - Composes definem `APP_URL` (DEV `http://casaratton.ddns.net:8080`; PROD o mesmo `VITE_APP_URL` do app); o CI grava um SMTP fictício no `backend/.env` do smoke de PROD (tarefa 013).
 - POLICY: o log de envio guarda só o tipo de e-mail e o destinatário mascarado (tarefa 013).
 - Todas as rotas do CRUD passam a exigir autenticação; `GET /v1/health` continua público (tarefa 012).
@@ -36,6 +37,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Recuperação de senha (tarefa 014): `POST /v1/auth/recuperar-senha` (sempre 202; envia o link só para usuário ativo, em segundo plano), `POST /v1/auth/redefinir-senha/validar` (200, 400 `token_invalido` ou 410 `token_expirado`) e `POST /v1/auth/redefinir-senha` (grava a nova senha, zera o bloqueio e encerra as sessões).
+- Tokens de link assinados sem estado (`src/auth/token-assinado.js`): payload em base64url + HMAC-SHA256 com chave derivada por finalidade; o de recuperação usa o `senha_hash` atual, então vale uma vez só e expira em 24 horas (tarefa 014).
+- Rate limit da recuperação: 3 pedidos por hora por e-mail e 10 por 15 minutos por IP (tarefa 014).
 - Serviço de e-mail (`MailModule`/`MailService`) com Gmail SMTP e senha de app (nodemailer): templates `convite` e `recuperacao-senha` em HTML e texto, links montados a partir de `APP_URL` com os parâmetros no fragmento, e `ErroEnvioEmail` (503 `falha_envio_email`) em caso de falha (tarefa 013).
 - `npm run email:teste -w backend -- --para <e-mail>` (`node dist/mail/enviar-teste.js` em PROD) para testar o envio real (tarefa 013).
 - Variáveis `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` e `APP_URL`; em produção, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` e `APP_URL` são obrigatórias (tarefa 013).

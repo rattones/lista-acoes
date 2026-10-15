@@ -13,14 +13,42 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { SkipThrottle, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { ValidacaoPipe } from '../comum/validacao.pipe';
+import { MailModule } from '../mail/mail.module';
 import { AuthService, REFRESH_SEGUNDOS } from './auth.service';
 import { Publico } from './decorators';
 import { AutenticacaoGuard, PapeisGuard } from './guards';
+import { RecuperacaoSenhaService } from './recuperacao-senha.service';
 
 const COOKIE_REFRESH = 'refresh_token';
+
+const email = () => Joi.string().trim().email().max(254).required();
+const token = () => Joi.string().max(2000).required();
+
+const esquemaRecuperar = Joi.object({ email: email() });
+const esquemaValidar = Joi.object({ token: token() });
+const esquemaRedefinir = Joi.object({ token: token(), senha: Joi.string().max(200).required() });
+
+// Limites (por IP, salvo o de e-mail). Cada rota pula os limites que não são dela.
+const LIMITES = [
+  { name: 'login', ttl: 60_000, limit: 10 },
+  { name: 'recuperacao_ip', ttl: 15 * 60_000, limit: 10 },
+  {
+    name: 'recuperacao_email',
+    ttl: 60 * 60_000,
+    limit: 3,
+    getTracker: (req) =>
+      String(req.body?.email ?? '')
+        .trim()
+        .toLowerCase() || `sem-email:${req.ip}`,
+  },
+];
+const SOMENTE_LOGIN = { recuperacao_ip: true, recuperacao_email: true };
+
+const MENSAGEM_RECUPERACAO =
+  'Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.';
 
 const esquemaLogin = Joi.object({
   email: Joi.string().trim().email().max(254).required(),
@@ -28,11 +56,12 @@ const esquemaLogin = Joi.object({
 });
 
 @Controller('auth')
-@Dependencies(AuthService, ConfigService)
+@Dependencies(AuthService, ConfigService, RecuperacaoSenhaService)
 export class AuthController {
-  constructor(auth, config) {
+  constructor(auth, config, recuperacao) {
     this.auth = auth;
     this.config = config;
+    this.recuperacao = recuperacao;
   }
 
   // Refresh token só em cookie httpOnly, enviado apenas às rotas /v1/auth.
@@ -55,6 +84,7 @@ export class AuthController {
 
   @Publico()
   @UseGuards(ThrottlerGuard)
+  @SkipThrottle(SOMENTE_LOGIN)
   @Post('login')
   @HttpCode(200)
   async login(@Body() corpo, @Res({ passthrough: true }) res) {
@@ -80,10 +110,43 @@ export class AuthController {
   eu(@Req() req) {
     return req.usuario;
   }
+
+  // Recuperação de senha (tarefa 014). O token vai sempre no corpo, nunca na URL (logs).
+  @Publico()
+  @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ login: true })
+  @Post('recuperar-senha')
+  @HttpCode(202)
+  recuperar(@Body() corpo) {
+    const { email } = new ValidacaoPipe(esquemaRecuperar).transform(corpo ?? {});
+    this.recuperacao.solicitar(email);
+    return { mensagem: MENSAGEM_RECUPERACAO };
+  }
+
+  @Publico()
+  @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ login: true, recuperacao_email: true })
+  @Post('redefinir-senha/validar')
+  @HttpCode(200)
+  validarRedefinicao(@Body() corpo) {
+    const { token } = new ValidacaoPipe(esquemaValidar).transform(corpo ?? {});
+    return { email: this.recuperacao.validar(token).email };
+  }
+
+  @Publico()
+  @UseGuards(ThrottlerGuard)
+  @SkipThrottle({ login: true, recuperacao_email: true })
+  @Post('redefinir-senha')
+  @HttpCode(200)
+  async redefinir(@Body() corpo) {
+    const { token, senha } = new ValidacaoPipe(esquemaRedefinir).transform(corpo ?? {});
+    await this.recuperacao.redefinir(token, senha);
+    return { mensagem: 'Senha redefinida. Entre com a nova senha.' };
+  }
 }
 
 // Autenticação (tarefa 012): JWT de acesso + refresh em cookie, guards globais de
-// autenticação e papéis, e rate limit no login (10 por minuto por IP).
+// autenticação e papéis, rate limit no login (10 por minuto por IP) e recuperação de senha.
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -91,13 +154,15 @@ export class AuthController {
       useFactory: (config) => ({ secret: config.get('JWT_SEGREDO') }),
     }),
     ThrottlerModule.forRoot({
-      throttlers: [{ name: 'login', ttl: 60_000, limit: 10 }],
-      errorMessage: 'Muitas tentativas de login. Aguarde um minuto.',
+      throttlers: LIMITES,
+      errorMessage: 'Muitas tentativas. Aguarde alguns minutos e tente de novo.',
     }),
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
+    RecuperacaoSenhaService,
     { provide: APP_GUARD, useClass: AutenticacaoGuard },
     { provide: APP_GUARD, useClass: PapeisGuard },
   ],
