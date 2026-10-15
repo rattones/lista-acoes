@@ -89,7 +89,7 @@ describe('cliente HTTP', () => {
   });
 
   it('envia o cookie (credentials: include) e o token de acesso da sessão', async () => {
-    const fetch = vi.fn().mockResolvedValue(respostaJson({}));
+    const fetch = vi.fn(async () => respostaJson({}));
     const cliente = criarCliente({ baseUrl: 'http://api.teste', fetch });
     await cliente.get('/v1/ativos');
     expect(fetch.mock.calls[0][1].credentials).toBe('include');

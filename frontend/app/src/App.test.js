@@ -59,7 +59,9 @@ describe('App', () => {
     await flushPromises();
     expect(falsa.chamou('POST /v1/auth/logout')).toHaveLength(1);
     expect(auth.logado).toBe(false);
-    expect(router.currentRoute.value.name).toBe('login');
+    // A tela de login é carregada sob demanda: espera a navegação terminar.
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'));
+    await flushPromises();
     expect(wrapper.find('.v-navigation-drawer').exists()).toBe(false);
   });
 

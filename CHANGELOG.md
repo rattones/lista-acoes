@@ -13,6 +13,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Cliente HTTP do app: envia o cookie (`credentials: 'include'`) e o token de acesso, renova a sessão uma vez em 401 e repete a requisição, aceita corpo no `DELETE` e converte falha de rede em `ErroApi` `sem_conexao` (tarefa 019).
+- A página inicial do app vira o Dashboard (só com login); Ativos, Usuários, API keys e Meu perfil aparecem como "em breve" até as tarefas 020 a 023 (tarefa 019).
 - POLICY: o wrapper consulta Yahoo, Binance e CoinGecko enviando só o código do ativo, sem dados pessoais (tarefa 018).
 - POLICY: a exclusão de conta pede a senha, apaga cadastro e API keys e não vale para o último admin ativo (tarefa 017).
 - O repositório genérico do CRUD aceita a opção `apresentar`, para ajustar o que sai da API (ex.: `agentes_tokens.escopos` em array) (tarefa 016).
@@ -42,6 +44,10 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: login, recuperação e redefinição de senha (`/login`, `/recuperar-senha`, `/redefinir-senha#t=`), com mensagens para credenciais inválidas, conta bloqueada (com o tempo restante), excesso de tentativas, falta de conexão e link expirado ou já usado (tarefa 019).
+- App: store `auth` (Pinia) com login, logout, sessão retomada pelo cookie do refresh ao abrir o app e renovação automática do token de acesso, que fica só em memória (tarefa 019).
+- App: guards de rota (rotas privadas exigem login, com volta à página pedida; rotas de admin exigem papel `admin`) e layout com menu lateral: usuário logado, Dashboard, Ativos, Usuários e API keys (só admin), Meu perfil e Sair (tarefa 019).
+- O 423 do login informa `detalhes.segundos_restantes` até o desbloqueio (tarefa 019).
 - Wrapper de dados de ativos (tarefa 018): `POST /v1/ativos/pre-visualizar { url }` monta os campos de `ativos` e a última cotação a partir de um link do Google Finance ou do Yahoo Finance, sem gravar; `POST /v1/ativos/:id/atualizar-dados` refaz a busca e atualiza o cadastro. Só admin.
 - Fontes do wrapper: Yahoo (ações, ETFs, índices e moedas), Binance e CoinGecko (cripto e stablecoins), com mapa de bolsas Google ↔ Yahoo e cliente HTTP com timeout, retry com backoff e cache curto. Erros 400 `url_nao_suportada`, 422 `ativo_nao_encontrado` e 502 `fonte_indisponivel` (tarefa 018).
 - Variáveis `WRAPPER_USER_AGENT`, `WRAPPER_TIMEOUT_MS`, `WRAPPER_TENTATIVAS` e `WRAPPER_CACHE_SEGUNDOS`, todas opcionais (tarefa 018).

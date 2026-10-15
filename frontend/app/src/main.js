@@ -4,4 +4,5 @@ import App from './App.vue';
 import { criarRouter } from './router/index.js';
 import { criarVuetify } from './plugins/vuetify.js';
 
-createApp(App).use(createPinia()).use(criarRouter()).use(criarVuetify()).mount('#app');
+const pinia = createPinia();
+createApp(App).use(pinia).use(criarRouter(undefined, pinia)).use(criarVuetify()).mount('#app');
