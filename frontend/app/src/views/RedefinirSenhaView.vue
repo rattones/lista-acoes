@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import CartaoPublico from '../components/CartaoPublico.vue';
 import { api } from '../api/cliente.js';
 import { mensagemDeErro } from '../utils/erros.js';
+import { limparLink, tokenDoLink } from '../utils/link.js';
 
 // Mesmo mínimo da API (backend/src/auth/senha.js).
 const SENHA_MINIMA = 10;
@@ -25,13 +26,6 @@ const minimo = (valor) =>
   (valor?.length ?? 0) >= SENHA_MINIMA || `Use ao menos ${SENHA_MINIMA} caracteres`;
 const igual = (valor) => valor === senha.value || 'As senhas não conferem';
 
-// O link traz o token no fragmento (#t=), que o navegador não envia ao servidor nem aos
-// logs; ?t= também é aceito. Depois de lido, o token sai do endereço.
-function lerToken() {
-  const doFragmento = new URLSearchParams(rota.hash.replace(/^#/, '')).get('t');
-  return doFragmento ?? (typeof rota.query.t === 'string' ? rota.query.t : '');
-}
-
 function linkInvalido(e) {
   estado.value = 'invalido';
   aviso.value =
@@ -41,8 +35,8 @@ function linkInvalido(e) {
 }
 
 onMounted(async () => {
-  token = lerToken();
-  if (rota.hash || rota.query.t) await router.replace({ name: 'redefinir-senha' });
+  token = tokenDoLink(rota, 't');
+  await limparLink(rota, router);
   if (!token) return linkInvalido({ message: 'Link inválido ou incompleto. Peça um novo.' });
   try {
     ({ email: email.value } = await api.post('/v1/auth/redefinir-senha/validar', { token }));
