@@ -17,10 +17,11 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { ValidacaoPipe } from '../comum/validacao.pipe';
 import { MailModule } from '../mail/mail.module';
+import { AgentesTokensService } from './agentes-tokens.service';
 import { AuthService, REFRESH_SEGUNDOS } from './auth.service';
 import { ConvitesService } from './convites.service';
 import { Papeis, Publico } from './decorators';
-import { AutenticacaoGuard, PapeisGuard } from './guards';
+import { ApiKeyGuard, AutenticacaoGuard, PapeisGuard } from './guards';
 import { LIMITES, limitar } from './limites';
 import { RecuperacaoSenhaService } from './recuperacao-senha.service';
 
@@ -179,7 +180,8 @@ export class ConvitesController {
 }
 
 // Autenticação (tarefa 012): JWT de acesso + refresh em cookie, guards globais de
-// autenticação e papéis, rate limits, recuperação de senha (014) e convites (015).
+// autenticação e papéis, rate limits, recuperação de senha (014), convites (015) e API keys
+// dos agentes (016). A ordem dos guards importa: a API key é conferida antes do JWT.
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -197,8 +199,11 @@ export class ConvitesController {
     AuthService,
     RecuperacaoSenhaService,
     ConvitesService,
+    AgentesTokensService,
+    { provide: APP_GUARD, useClass: ApiKeyGuard },
     { provide: APP_GUARD, useClass: AutenticacaoGuard },
     { provide: APP_GUARD, useClass: PapeisGuard },
   ],
+  exports: [AgentesTokensService],
 })
 export class AuthModule {}

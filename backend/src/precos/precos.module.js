@@ -1,6 +1,6 @@
 import { Body, Controller, Dependencies, HttpCode, Module, Post } from '@nestjs/common';
 import Joi from 'joi';
-import { Papeis } from '../auth/decorators';
+import { Escopos, EscoposCrud, Papeis } from '../auth/decorators';
 import { ControladorCrud, validar } from '../comum/crud/controlador-crud';
 import {
   data,
@@ -40,6 +40,7 @@ const esquemas = {
 };
 
 // Cotações diárias (tabela precos_diarios). POST /lote: upsert por (ativo_id, data), para o agente.
+@EscoposCrud({ leitura: 'precos:read', escrita: 'precos:write' })
 @Controller('precos')
 @Dependencies(REPOSITORIO_PRECOS)
 export class PrecosController extends ControladorCrud {
@@ -48,6 +49,7 @@ export class PrecosController extends ControladorCrud {
   }
 
   @Papeis('admin')
+  @Escopos('precos:write')
   @Post('lote')
   @HttpCode(200)
   lote(@Body() corpo) {

@@ -5,13 +5,55 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AgentesTokensService } from './agentes-tokens.service';
 import { AuthService } from './auth.service';
-import { PAPEIS, PUBLICO } from './decorators';
+import { ESCOPOS, ESCOPOS_CRUD, PAPEIS, PUBLICO } from './decorators';
 
 const metadado = (reflector, chave, contexto) =>
   reflector.getAllAndOverride(chave, [contexto.getHandler(), contexto.getClass()]);
 
-// Guard global: toda rota exige "Authorization: Bearer <token de acesso>", salvo @Publico().
+const PREFIXO_API_KEY = 'la_';
+const bearer = (req) => /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1];
+
+// Escopos da rota: @Escopos no método ou, nas rotas herdadas do CRUD, @EscoposCrud no controller.
+const escoposDaRota = (reflector, contexto) =>
+  reflector.get(ESCOPOS, contexto.getHandler()) ??
+  reflector.get(ESCOPOS_CRUD, contexto.getClass())?.[contexto.getHandler().name] ??
+  [];
+
+// Guard global, antes do de autenticação (tarefa 016): "Authorization: Bearer la_..." é uma
+// API key de agente. Chave inválida, revogada ou excluída → 401; rota sem um escopo da
+// chave → 403. A chave nunca vale em rota sem @Escopos (usuários, chaves, /auth...).
+@Injectable()
+@Dependencies(Reflector, AgentesTokensService)
+export class ApiKeyGuard {
+  constructor(reflector, agentesTokens) {
+    this.reflector = reflector;
+    this.agentesTokens = agentesTokens;
+  }
+
+  canActivate(contexto) {
+    if (metadado(this.reflector, PUBLICO, contexto)) return true;
+    const req = contexto.switchToHttp().getRequest();
+    const chave = bearer(req);
+    if (!chave?.startsWith(PREFIXO_API_KEY)) return true;
+
+    const agente = this.agentesTokens.autenticar(chave);
+    if (!agente) {
+      throw new UnauthorizedException({
+        erro: 'nao_autenticado',
+        mensagem: 'API key inválida, revogada ou excluída',
+      });
+    }
+    const escopos = escoposDaRota(this.reflector, contexto);
+    if (!escopos.some((escopo) => agente.escopos.includes(escopo))) throw proibido();
+    req.agente = agente;
+    return true;
+  }
+}
+
+// Guard global: toda rota exige "Authorization: Bearer <token de acesso>", salvo @Publico()
+// ou quando o ApiKeyGuard já autenticou um agente.
 @Injectable()
 @Dependencies(Reflector, AuthService)
 export class AutenticacaoGuard {
@@ -23,7 +65,8 @@ export class AutenticacaoGuard {
   canActivate(contexto) {
     if (metadado(this.reflector, PUBLICO, contexto)) return true;
     const req = contexto.switchToHttp().getRequest();
-    const [, token] = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '') ?? [];
+    if (req.agente) return true;
+    const token = bearer(req);
     const usuario = token && this.auth.usuarioDoToken(token);
     if (!usuario) {
       throw new UnauthorizedException({
@@ -37,6 +80,7 @@ export class AutenticacaoGuard {
 }
 
 // Guard global: @Papeis(...) na rota ou no controller restringe aos papéis listados.
+// Para um agente, valem os escopos, já conferidos pelo ApiKeyGuard.
 @Injectable()
 @Dependencies(Reflector)
 export class PapeisGuard {
@@ -46,8 +90,8 @@ export class PapeisGuard {
 
   canActivate(contexto) {
     const papeis = metadado(this.reflector, PAPEIS, contexto);
-    if (!papeis?.length) return true;
-    const { usuario } = contexto.switchToHttp().getRequest();
+    const { usuario, agente } = contexto.switchToHttp().getRequest();
+    if (!papeis?.length || agente) return true;
     if (!papeis.includes(usuario?.papel)) throw proibido();
     return true;
   }

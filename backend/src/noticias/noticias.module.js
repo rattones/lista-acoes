@@ -1,6 +1,6 @@
 import { Body, Controller, Dependencies, HttpCode, Module, Post } from '@nestjs/common';
 import Joi from 'joi';
-import { Papeis } from '../auth/decorators';
+import { Escopos, EscoposCrud, Papeis } from '../auth/decorators';
 import { ControladorCrud, validar } from '../comum/crud/controlador-crud';
 import {
   dataHora,
@@ -41,6 +41,7 @@ const esquemas = {
 };
 
 // POST /lote: upsert pela URL, para o agente coletor de notícias.
+@EscoposCrud({ leitura: 'noticias:read', escrita: 'noticias:write' })
 @Controller('noticias')
 @Dependencies(REPOSITORIO_NOTICIAS)
 export class NoticiasController extends ControladorCrud {
@@ -49,6 +50,7 @@ export class NoticiasController extends ControladorCrud {
   }
 
   @Papeis('admin')
+  @Escopos('noticias:write')
   @Post('lote')
   @HttpCode(200)
   lote(@Body() corpo) {

@@ -1,5 +1,6 @@
 import { Controller, Dependencies, Module, UnprocessableEntityException } from '@nestjs/common';
 import Joi from 'joi';
+import { EscoposCrud } from '../auth/decorators';
 import { ControladorCrud } from '../comum/crud/controlador-crud';
 import { data, esquemaAtualizacao, esquemaListagem, id, texto } from '../comum/crud/esquemas';
 import { Repositorio } from '../comum/crud/repositorio';
@@ -92,6 +93,7 @@ function preencherCodigoAtivo(dados, db) {
   return { ...dados, ativo };
 }
 
+@EscoposCrud({ leitura: 'sinais:read', escrita: 'sinais:write' })
 @Controller('sinais')
 @Dependencies(REPOSITORIO_SINAIS)
 export class SinaisController extends ControladorCrud {
