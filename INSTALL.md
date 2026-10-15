@@ -79,6 +79,10 @@ docker compose -f infra/docker-compose.prod.yml exec backend node dist/mail/envi
 - **Links:** montados a partir de `APP_URL`. Os composes definem DEV `http://casaratton.ddns.net:8080` e PROD `https://app.listadecompras.net` (o mesmo `VITE_APP_URL` do app).
 - **Erro de autenticação (`EAUTH`):** confira se a senha é de app e se a verificação em duas etapas continua ativa. Trocar a senha da conta Google revoga as senhas de app.
 
+## Fontes de dados dos ativos
+
+O wrapper de ativos (`POST /v1/ativos/pre-visualizar`) consulta APIs públicas, sem chave: Yahoo Finance (`query1.finance.yahoo.com`), Binance (`data-api.binance.vision`) e CoinGecko (`api.coingecko.com`). O servidor precisa de saída HTTPS para esses domínios. As variáveis `WRAPPER_*` do `backend/.env` (todas opcionais, ver `backend/.env-example`) ajustam User-Agent, timeout, tentativas e cache. Se o Yahoo começar a responder 429 ou 403, troque o `WRAPPER_USER_AGENT`.
+
 ## Executar a API em desenvolvimento
 
 ```sh

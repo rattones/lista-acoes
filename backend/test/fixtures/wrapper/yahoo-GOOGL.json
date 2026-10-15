@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "GOOGL",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "regularMarketTime": 1792076374,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 348.67,
+          "chartPreviousClose": 347.64,
+          "longName": "Alphabet Inc.",
+          "shortName": "Alphabet Inc.",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076374],
+        "indicators": {
+          "quote": [
+            {
+              "low": [340.6099853515625],
+              "close": [348.6700134277344],
+              "high": [352.1300048828125],
+              "open": [344.69500732421875],
+              "volume": [7792339]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [348.6700134277344]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

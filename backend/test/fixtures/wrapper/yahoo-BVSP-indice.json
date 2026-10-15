@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "BRL",
+          "symbol": "^BVSP",
+          "exchangeName": "SAO",
+          "fullExchangeName": "São Paulo",
+          "instrumentType": "INDEX",
+          "regularMarketTime": 1792075470,
+          "gmtoffset": -10800,
+          "timezone": "BRT",
+          "exchangeTimezoneName": "America/Sao_Paulo",
+          "regularMarketPrice": 206047.06,
+          "chartPreviousClose": 206505.98,
+          "longName": "IBOVESPA",
+          "shortName": "IBOVESPA",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792075470],
+        "indicators": {
+          "quote": [
+            {
+              "close": [206047.0625],
+              "high": [206486.8125],
+              "low": [203110.4375],
+              "volume": [0],
+              "open": [206486.8125]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [206047.0625]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

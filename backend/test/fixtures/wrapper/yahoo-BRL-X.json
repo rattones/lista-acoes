@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "BRL",
+          "symbol": "BRL=X",
+          "exchangeName": "CCY",
+          "fullExchangeName": "CCY",
+          "instrumentType": "CURRENCY",
+          "regularMarketTime": 1792076374,
+          "gmtoffset": 3600,
+          "timezone": "BST",
+          "exchangeTimezoneName": "Europe/London",
+          "regularMarketPrice": 5.0406,
+          "chartPreviousClose": 5.0299,
+          "longName": "USD/BRL",
+          "shortName": "USD/BRL",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076374],
+        "indicators": {
+          "quote": [
+            {
+              "low": [5.026100158691406],
+              "open": [5.029900074005127],
+              "volume": [0],
+              "high": [5.065999984741211],
+              "close": [5.040599822998047]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [5.040599822998047]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "BRL",
+          "symbol": "PETR4.SA",
+          "exchangeName": "SAO",
+          "fullExchangeName": "São Paulo",
+          "instrumentType": "EQUITY",
+          "regularMarketTime": 1792075474,
+          "gmtoffset": -10800,
+          "timezone": "BRT",
+          "exchangeTimezoneName": "America/Sao_Paulo",
+          "regularMarketPrice": 57.97,
+          "chartPreviousClose": 58.11,
+          "longName": "Petróleo Brasileiro S.A. - Petrobras",
+          "shortName": "PETROBRAS   PN      N2",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792075474],
+        "indicators": {
+          "quote": [
+            {
+              "open": [57.599998474121094],
+              "volume": [12496400],
+              "high": [58.06999969482422],
+              "close": [57.970001220703125],
+              "low": [57.470001220703125]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [57.970001220703125]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "BTC-USD",
+          "exchangeName": "CCC",
+          "fullExchangeName": "CCC",
+          "instrumentType": "CRYPTOCURRENCY",
+          "regularMarketTime": 1792076376,
+          "gmtoffset": 0,
+          "timezone": "UTC",
+          "exchangeTimezoneName": "UTC",
+          "regularMarketPrice": 81791.57,
+          "chartPreviousClose": 81573.1,
+          "longName": "Bitcoin USD",
+          "shortName": "Bitcoin USD",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076376],
+        "indicators": {
+          "quote": [
+            {
+              "volume": [41556922368],
+              "low": [79789.359375],
+              "open": [81573.1015625],
+              "high": [81894.6875],
+              "close": [81791.5703125]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [81791.5703125]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

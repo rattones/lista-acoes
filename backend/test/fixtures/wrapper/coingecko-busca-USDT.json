@@ -1,0 +1,32 @@
+{
+  "coins": [
+    {
+      "id": "tether",
+      "name": "Tether",
+      "api_symbol": "tether",
+      "symbol": "USDT",
+      "market_cap_rank": 3
+    },
+    {
+      "id": "galaxy-usdt-quality",
+      "name": "Galaxy USDT Quality",
+      "api_symbol": "galaxy-usdt-quality",
+      "symbol": "ETH:GUSDTQ",
+      "market_cap_rank": 1183
+    },
+    {
+      "id": "fxarbusdtry",
+      "name": "FXArbUSDTRY",
+      "api_symbol": "fxarbusdtry",
+      "symbol": "FXARBUSDTRY",
+      "market_cap_rank": 1981
+    },
+    {
+      "id": "evausdt",
+      "name": "evaUSDT",
+      "api_symbol": "evausdt",
+      "symbol": "EVAUSDT",
+      "market_cap_rank": 2065
+    }
+  ]
+}
