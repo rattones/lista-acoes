@@ -48,6 +48,8 @@ O sistema envia e-mails apenas para:
 - **Convite:** link de cadastro, válido por 72 horas, enviado ao e-mail escolhido pelo admin.
 - **Recuperação de senha:** link válido por 24 horas, enviado quando você pede. Ele deixa de funcionar quando a senha é trocada.
 
+O registro técnico de cada envio guarda só o tipo de e-mail e o destinatário mascarado (ex.: `f***@dominio.com`), nunca o conteúdo nem o link.
+
 Os e-mails são enviados pelo **Gmail** (SMTP do Google), que recebe o endereço do destinatário e o conteúdo da mensagem para fazer a entrega, conforme a política de privacidade do Google. Não enviamos newsletters, propaganda nem e-mails para terceiros.
 
 ## Armazenamento e segurança

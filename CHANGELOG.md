@@ -13,6 +13,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Composes definem `APP_URL` (DEV `http://casaratton.ddns.net:8080`; PROD o mesmo `VITE_APP_URL` do app); o CI grava um SMTP fictício no `backend/.env` do smoke de PROD (tarefa 013).
+- POLICY: o log de envio guarda só o tipo de e-mail e o destinatário mascarado (tarefa 013).
 - Todas as rotas do CRUD passam a exigir autenticação; `GET /v1/health` continua público (tarefa 012).
 - `backend/.env` passa a ser obrigatório nos composes de DEV e PROD (guarda o `JWT_SEGREDO`); o CI gera um segredo descartável para o smoke de PROD (tarefa 012).
 - CORS com `credentials: true` (o app envia o cookie do refresh) e `trust proxy` configurável (tarefa 012).
@@ -34,6 +36,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Serviço de e-mail (`MailModule`/`MailService`) com Gmail SMTP e senha de app (nodemailer): templates `convite` e `recuperacao-senha` em HTML e texto, links montados a partir de `APP_URL` com os parâmetros no fragmento, e `ErroEnvioEmail` (503 `falha_envio_email`) em caso de falha (tarefa 013).
+- `npm run email:teste -w backend -- --para <e-mail>` (`node dist/mail/enviar-teste.js` em PROD) para testar o envio real (tarefa 013).
+- Variáveis `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` e `APP_URL`; em produção, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` e `APP_URL` são obrigatórias (tarefa 013).
 - Login por e-mail e senha (`POST /v1/auth/login`): token de acesso JWT de 15 minutos e refresh token de 7 dias em cookie `httpOnly`/`SameSite=Strict`; `POST /v1/auth/refresh`, `POST /v1/auth/logout` (encerra todas as sessões) e `GET /v1/auth/eu` (tarefa 012).
 - Bloqueio de 15 minutos após 5 senhas erradas seguidas (423), mensagem genérica para credenciais inválidas e rate limit de 10 tentativas de login por minuto por IP (429) (tarefa 012).
 - Guards globais de autenticação e papéis (`@Publico()`, `@Papeis('admin')`): leitor só lê; admin escreve, exclui, restaura, usa lotes, vê excluídos e gerencia usuários (tarefa 012).

@@ -57,6 +57,28 @@ A senha (mínimo de 10 caracteres) é pedida duas vezes, sem aparecer na tela. S
 
 Nova migration: crie `backend/migrations/NNNN_descricao.sql` com o próximo número (4 dígitos). Cada arquivo roda em uma transação, então não use `BEGIN`/`COMMIT` nele, nem `PRAGMA foreign_keys` (não tem efeito dentro de transação). Migration aplicada não deve ser editada: corrija com uma nova.
 
+## E-mail (Gmail SMTP)
+
+A API envia convites e links de recuperação de senha pelo Gmail, com uma **senha de app** (não a senha da conta):
+
+1. Na conta Google que vai enviar, ative a verificação em duas etapas.
+2. Gere a senha de app em <https://myaccount.google.com/apppasswords> (16 caracteres).
+3. Preencha no `backend/.env`: `SMTP_USER` (o e-mail da conta), `SMTP_PASS` (a senha de app) e `MAIL_FROM` (ex.: `"Lista de Ações <conta@gmail.com>"`). `SMTP_HOST` e `SMTP_PORT` já vêm com `smtp.gmail.com` e `465`.
+4. Teste o envio para uma caixa sua:
+
+```sh
+npm run email:teste -w backend -- --para voce@exemplo.com
+# DEV com Docker:
+docker compose -f infra/docker-compose.dev.yml exec backend npm run email:teste -w backend -- --para voce@exemplo.com
+# PROD:
+docker compose -f infra/docker-compose.prod.yml exec backend node dist/mail/enviar-teste.js --para voce@exemplo.com
+```
+
+- **Limite:** o Gmail aceita cerca de **500 destinatários por dia** por conta; acima disso, os envios falham até o dia seguinte.
+- **Obrigatório em produção:** sem `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` (e `APP_URL`), a API não sobe. Fora de produção, sem usuário e senha o envio fica desligado e as rotas que mandam e-mail respondem com erro.
+- **Links:** montados a partir de `APP_URL`. Os composes definem DEV `http://casaratton.ddns.net:8080` e PROD `https://app.listadecompras.net` (o mesmo `VITE_APP_URL` do app).
+- **Erro de autenticação (`EAUTH`):** confira se a senha é de app e se a verificação em duas etapas continua ativa. Trocar a senha da conta Google revoga as senhas de app.
+
 ## Executar a API em desenvolvimento
 
 ```sh

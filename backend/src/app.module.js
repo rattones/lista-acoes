@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { ExecucoesModule } from './execucoes/execucoes.module';
 import { HealthController } from './health/health.controller';
+import { MailModule } from './mail/mail.module';
 import { NoticiasModule } from './noticias/noticias.module';
 import { PrecosModule } from './precos/precos.module';
 import { SinaisModule } from './sinais/sinais.module';
@@ -28,6 +29,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     }),
     DatabaseModule,
     AuthModule,
+    MailModule,
     AtivosModule,
     ExecucoesModule,
     SinaisModule,

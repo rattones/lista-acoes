@@ -89,6 +89,8 @@ services:
       CORS_ORIGENS: ${CORS_ORIGENS:-https://app.listadecompras.net}
       # Um salto de proxy (Nginx): o IP do cliente vem do X-Forwarded-For.
       CONFIAR_PROXY: 1
+      # Base dos links enviados por e-mail: o mesmo endereço do app.
+      APP_URL: ${VITE_APP_URL:-https://app.listadecompras.net}
     volumes:
       - dados:/app/backend/data
     healthcheck:

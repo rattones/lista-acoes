@@ -66,8 +66,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      # Segredo descartável só para o smoke (em PROD vem do backend/.env da VPS).
-      - run: echo "JWT_SEGREDO=$(openssl rand -base64 48)" > backend/.env
+      # Segredos descartáveis só para o smoke (em PROD vêm do backend/.env da VPS).
+      # O SMTP fictício nunca é usado: o smoke não envia e-mails.
+      - run: |
+          {
+            echo "JWT_SEGREDO=$(openssl rand -base64 48)"
+            echo "SMTP_USER=ci@example.com"
+            echo "SMTP_PASS=ci"
+            echo "MAIL_FROM=ci@example.com"
+          } > backend/.env
       - run: docker compose -f infra/docker-compose.prod.yml build
       # Certificado autoassinado com os nomes de PROD (o real vem da Let's Encrypt na VPS).
       - run: docker compose -f infra/docker-compose.prod.yml --profile teste run --rm certificado-teste

@@ -14,6 +14,19 @@ const esquema = Joi.object({
   JWT_SEGREDO: Joi.string().min(32).required(),
   COOKIE_SEGURO: Joi.boolean(),
   CONFIAR_PROXY: Joi.number().integer().min(0).default(0),
+  // E-mail (tarefa 013): credenciais obrigatórias só em produção; sem elas o envio fica desligado.
+  SMTP_HOST: Joi.string().default('smtp.gmail.com'),
+  SMTP_PORT: Joi.number().port().default(465),
+  SMTP_USER: Joi.string().when('NODE_ENV', { is: 'production', then: Joi.required() }),
+  SMTP_PASS: Joi.string().when('NODE_ENV', { is: 'production', then: Joi.required() }),
+  MAIL_FROM: Joi.string().when('NODE_ENV', { is: 'production', then: Joi.required() }),
+  APP_URL: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.required(),
+      otherwise: Joi.optional().default('http://localhost:8080'),
+    }),
 }).unknown(true);
 
 // Valida as variáveis de ambiente na inicialização; a API não sobe com configuração inválida.
