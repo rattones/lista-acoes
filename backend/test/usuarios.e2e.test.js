@@ -17,26 +17,28 @@ fluxoCrud({
 
 describe('/v1/usuarios (regras)', () => {
   let ctx;
+  let u0;
+  let u1;
   beforeEach(async () => {
     ctx = await criarAppTeste();
-    semear(ctx, 0);
-    semear(ctx, 1);
+    u0 = semear(ctx, 0);
+    u1 = semear(ctx, 1);
   });
   afterEach(() => ctx.app.close());
 
-  it('nunca retorna senha_hash (listagem, obter, atualizar, restaurar)', async () => {
+  it('nunca retorna senha_hash nem versao_sessao (listagem, obter, atualizar, restaurar)', async () => {
     const respostas = [
       await ctx.http().get('/v1/usuarios'),
       await ctx.http().get('/v1/usuarios').query({ incluir_excluidos: true }),
-      await ctx.http().get('/v1/usuarios/1'),
-      await ctx.http().patch('/v1/usuarios/1').send({ nome: 'Outro' }),
+      await ctx.http().get(`/v1/usuarios/${u0}`),
+      await ctx.http().patch(`/v1/usuarios/${u0}`).send({ nome: 'Outro' }),
     ];
-    await ctx.http().delete('/v1/usuarios/2');
-    respostas.push(await ctx.http().post('/v1/usuarios/2/restaurar'));
+    await ctx.http().delete(`/v1/usuarios/${u1}`);
+    respostas.push(await ctx.http().post(`/v1/usuarios/${u1}/restaurar`));
 
     for (const res of respostas) {
       expect(res.status).toBe(200);
-      expect(JSON.stringify(res.body)).not.toMatch(/senha_hash|argon2/);
+      expect(JSON.stringify(res.body)).not.toMatch(/senha_hash|argon2|versao_sessao/);
     }
   });
 
@@ -46,13 +48,13 @@ describe('/v1/usuarios (regras)', () => {
       { senha_hash: 'x' },
       { senha: 'senha-nova-123' },
     ]) {
-      const res = await ctx.http().patch('/v1/usuarios/1').send(payload);
+      const res = await ctx.http().patch(`/v1/usuarios/${u0}`).send(payload);
       expect(res.status).toBe(400);
     }
   });
 
   it('PATCH registra atualizado_em e grava ativo como 0/1', async () => {
-    const res = await ctx.http().patch('/v1/usuarios/1').send({ ativo: false });
+    const res = await ctx.http().patch(`/v1/usuarios/${u0}`).send({ ativo: false });
     expect(res.body).toMatchObject({
       ativo: 0,
       atualizado_em: expect.stringMatching(/^\d{4}-\d{2}-\d{2} /),
@@ -68,16 +70,16 @@ describe('/v1/usuarios (regras)', () => {
 
   it('filtra por papel e e-mail (sem diferenciar maiúsculas)', async () => {
     const res = await ctx.http().get('/v1/usuarios').query({ email: 'USUARIO1@teste.com' });
-    expect(res.body.dados.map((u) => u.id)).toEqual([2]);
+    expect(res.body.dados.map((u) => u.id)).toEqual([u1]);
   });
 
   it('exclusão física de usuário apaga suas API keys', async () => {
     ctx.db
       .prepare(
-        "INSERT INTO agentes_tokens (nome, prefixo, token_hash, criado_por) VALUES ('a', 'p1', 'h', 1)",
+        "INSERT INTO agentes_tokens (nome, prefixo, token_hash, criado_por) VALUES ('a', 'p1', 'h', ?)",
       )
-      .run();
-    await ctx.http().delete('/v1/usuarios/1').query({ permanente: true });
+      .run(u0);
+    await ctx.http().delete(`/v1/usuarios/${u0}`).query({ permanente: true });
     expect(ctx.db.prepare('SELECT COUNT(*) FROM agentes_tokens').pluck().get()).toBe(0);
   });
 });

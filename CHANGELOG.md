@@ -13,6 +13,11 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Todas as rotas do CRUD passam a exigir autenticação; `GET /v1/health` continua público (tarefa 012).
+- `backend/.env` passa a ser obrigatório nos composes de DEV e PROD (guarda o `JWT_SEGREDO`); o CI gera um segredo descartável para o smoke de PROD (tarefa 012).
+- CORS com `credentials: true` (o app envia o cookie do refresh) e `trust proxy` configurável (tarefa 012).
+- O teste de rotação dos logs lê os composes com `js-yaml` (schema YAML 1.1, que resolve `<<`), sem depender da versão do Docker nem do `backend/.env` (tarefa 012).
+- `@nestjs/jwt` fixado na 11.x: a 12 é só ESM e não carrega no Jest (CommonJS via Babel) (tarefa 012).
 - POLICY descreve a retenção dos logs (até 50 MB por serviço) e que credenciais não são gravadas; INSTALL orienta recriar os containers do DEV depois de um `git pull` (arquivos montados um a um não acompanham o git) (tarefa 029).
 - Decorators de parâmetro (`@Body()`, `@Query()`, `@Param()`, `@Inject()` no construtor) passam a ser convertidos por um plugin local no `backend/babel.config.js`, no formato do `__param` do TypeScript (tarefa 011).
 - Limite do corpo JSON da API sobe de 100 KB para 1 MB, para os lotes dos agentes (tarefa 011).
@@ -29,6 +34,11 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Login por e-mail e senha (`POST /v1/auth/login`): token de acesso JWT de 15 minutos e refresh token de 7 dias em cookie `httpOnly`/`SameSite=Strict`; `POST /v1/auth/refresh`, `POST /v1/auth/logout` (encerra todas as sessões) e `GET /v1/auth/eu` (tarefa 012).
+- Bloqueio de 15 minutos após 5 senhas erradas seguidas (423), mensagem genérica para credenciais inválidas e rate limit de 10 tentativas de login por minuto por IP (429) (tarefa 012).
+- Guards globais de autenticação e papéis (`@Publico()`, `@Papeis('admin')`): leitor só lê; admin escreve, exclui, restaura, usa lotes, vê excluídos e gerencia usuários (tarefa 012).
+- Migration `0003_sessao_usuarios.sql`: `usuarios.versao_sessao`, que invalida os tokens já emitidos no logout (tarefa 012).
+- Variáveis `JWT_SEGREDO` (obrigatória), `COOKIE_SEGURO` e `CONFIAR_PROXY` (tarefa 012).
 - CRUD de `ativos`, `execucoes`, `sinais`, `precos` (`precos_diarios`), `noticias` e `usuarios`: listagem paginada com ordenação, filtros e `incluir_excluidos`, obter, criar, atualizar (PATCH), exclusão lógica, exclusão física (`?permanente=true`) e restauração (`POST /:id/restaurar`) (tarefa 011).
 - Repositório genérico em SQL puro (`src/comum/crud/repositorio.js`) e controlador base (`src/comum/crud/controlador-crud.js`) reutilizados pelos recursos (tarefa 011).
 - `POST /v1/precos/lote` e `POST /v1/noticias/lote`: upsert de até 1000 itens numa transação, devolvendo `{ inseridos, atualizados }` (tarefa 011).

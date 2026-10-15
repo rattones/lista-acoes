@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { opcoesPinoHttp } from './comum/log';
 import { validarConfig } from './config/configuracao';
 import { AtivosModule } from './ativos/ativos.module';
+import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { ExecucoesModule } from './execucoes/execucoes.module';
 import { HealthController } from './health/health.controller';
@@ -26,6 +27,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
       }),
     }),
     DatabaseModule,
+    AuthModule,
     AtivosModule,
     ExecucoesModule,
     SinaisModule,
