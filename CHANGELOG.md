@@ -13,6 +13,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- POLICY: a exclusão de conta pede a senha, apaga cadastro e API keys e não vale para o último admin ativo (tarefa 017).
 - O repositório genérico do CRUD aceita a opção `apresentar`, para ajustar o que sai da API (ex.: `agentes_tokens.escopos` em array) (tarefa 016).
 - Rate limits nomeados centralizados em `src/auth/limites.js`, com o decorator `@limitar(...)`: cada rota declara só os limites que valem para ela (tarefa 015).
 - POLICY: o convite leva o nome de quem convidou e nada é guardado antes do aceite (tarefa 015).
@@ -40,6 +41,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Edição do próprio perfil (tarefa 017): `PATCH /v1/auth/eu { nome?, senha_atual?, nova_senha? }`; o e-mail não muda (400). Trocar a senha exige a atual, encerra as outras sessões e devolve uma sessão nova.
+- Exclusão permanente da própria conta (tarefa 017): `DELETE /v1/auth/eu { senha }` apaga o usuário e, em cascata, as API keys que ele criou; senha errada → 403 `senha_incorreta`; o último admin ativo não pode se excluir (409 `ultimo_admin`). Limite de 10 confirmações de senha por 15 minutos por IP.
+- Teste do schema garante que toda chave estrangeira para `usuarios` é `ON DELETE CASCADE` (tarefa 017).
 - API keys dos agentes (tarefa 016): `POST /v1/agentes-tokens` (devolve a chave `la_<prefixo>_<segredo>` uma única vez), `GET /v1/agentes-tokens` e `/:id` (sem segredo nem hash), `GET /v1/agentes-tokens/escopos`, `POST /v1/agentes-tokens/:id/revogar`, exclusão e restauração, só para admin. O banco guarda só o prefixo e o SHA-256 do segredo.
 - Autenticação de agentes por `Authorization: Bearer la_...` (`ApiKeyGuard`): chave inválida, revogada, excluída ou de criador que não é mais admin ativo → 401; rota fora dos escopos → 403. Escopos `ativos:read`, `execucoes:read/write`, `sinais:read/write`, `precos:read/write` e `noticias:read/write`, declarados nas rotas com `@Escopos(...)` e `@EscoposCrud(...)` (tarefa 016).
 - Convites (tarefa 015): `POST /v1/convites` (admin; envia o link e devolve `{ email, papel, expira_em }`), `POST /v1/convites/validar` e `POST /v1/convites/aceitar` (públicos), com link assinado sem estado válido por 72 horas, e-mail do novo usuário vindo do token (só confirmado) e papel escolhido pelo admin.

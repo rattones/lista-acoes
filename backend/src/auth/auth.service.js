@@ -1,7 +1,15 @@
-import { Dependencies, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Dependencies,
+  ForbiddenException,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CONEXAO_DB } from '../database/database.module';
-import { gerarHashSenha, verificarSenha } from './senha';
+import { gerarHashSenha, validarSenha, verificarSenha } from './senha';
 
 export const ACESSO_SEGUNDOS = 15 * 60;
 export const REFRESH_SEGUNDOS = 7 * 24 * 60 * 60;
@@ -12,6 +20,9 @@ const credenciaisInvalidas = () =>
   new UnauthorizedException({ erro: 'nao_autenticado', mensagem: 'E-mail ou senha inválidos' });
 const sessaoInvalida = () =>
   new UnauthorizedException({ erro: 'nao_autenticado', mensagem: 'Sessão inválida ou expirada' });
+
+const senhaIncorreta = () =>
+  new ForbiddenException({ erro: 'senha_incorreta', mensagem: 'Senha atual incorreta' });
 
 const publico = ({ id, email, nome, papel }) => ({ id, email, nome, papel });
 
@@ -134,5 +145,69 @@ export class AuthService {
   // Encerra todas as sessões do usuário (os tokens já emitidos deixam de valer).
   sair(id) {
     this.db.prepare('UPDATE usuarios SET versao_sessao = versao_sessao + 1 WHERE id = ?').run(id);
+  }
+
+  // Perfil e exclusão de conta (tarefa 017): ações sobre a própria conta pedem a senha atual.
+  async confirmarSenha(id, senha) {
+    const usuario = this.buscar('id', id);
+    if (!usuario || !(await verificarSenha(usuario.senha_hash, senha))) throw senhaIncorreta();
+    return usuario;
+  }
+
+  // Muda o nome e/ou a senha (o e-mail nunca muda). Trocar a senha encerra todas as sessões
+  // e devolve uma sessão nova; sem troca, devolve só { usuario }.
+  async atualizarPerfil(id, { nome, senha_atual: senhaAtual, nova_senha: novaSenha }) {
+    if (novaSenha !== undefined) {
+      try {
+        validarSenha(novaSenha);
+      } catch (erro) {
+        throw new BadRequestException({
+          erro: 'requisicao_invalida',
+          mensagem: erro.message,
+          detalhes: [{ campo: 'nova_senha', mensagem: erro.message }],
+        });
+      }
+    }
+    if (senhaAtual !== undefined) await this.confirmarSenha(id, senhaAtual);
+
+    const atribuicoes = ["atualizado_em = datetime('now','localtime')"];
+    const valores = { id };
+    if (nome !== undefined) {
+      atribuicoes.push('nome = @nome');
+      valores.nome = nome;
+    }
+    if (novaSenha !== undefined) {
+      atribuicoes.push('senha_hash = @senhaHash', 'versao_sessao = versao_sessao + 1');
+      valores.senhaHash = await gerarHashSenha(novaSenha);
+    }
+    this.db.prepare(`UPDATE usuarios SET ${atribuicoes.join(', ')} WHERE id = @id`).run(valores);
+
+    const usuario = this.buscar('id', id);
+    return novaSenha !== undefined
+      ? this.emitir(usuario)
+      : { corpo: { usuario: publico(usuario) } };
+  }
+
+  // Apaga o usuário de vez; as FKs ON DELETE CASCADE levam o que ele criou (agentes_tokens).
+  // O último admin ativo não pode se excluir: o sistema ficaria sem administração.
+  async excluirConta(id, senha) {
+    const usuario = await this.confirmarSenha(id, senha);
+    this.db.transaction(() => {
+      const outrosAdmins = this.db
+        .prepare(
+          `SELECT COUNT(*) FROM usuarios
+           WHERE papel = 'admin' AND ativo = 1 AND excluido_em IS NULL AND id <> ?`,
+        )
+        .pluck()
+        .get(id);
+      if (usuario.papel === 'admin' && outrosAdmins === 0) {
+        throw new ConflictException({
+          erro: 'ultimo_admin',
+          mensagem:
+            'Você é o último administrador ativo: promova outro admin antes de excluir a conta.',
+        });
+      }
+      this.db.prepare('DELETE FROM usuarios WHERE id = ?').run(id);
+    })();
   }
 }

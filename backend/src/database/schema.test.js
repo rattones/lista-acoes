@@ -239,6 +239,19 @@ describe('schema inicial', () => {
     );
   });
 
+  // Exclusão permanente de conta (tarefa 017): apagar o usuário apaga tudo o que é dele.
+  it('toda chave estrangeira para usuarios é ON DELETE CASCADE', () => {
+    const tabelas = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
+    const fks = tabelas.flatMap((tabela) =>
+      db
+        .pragma(`foreign_key_list(${tabela})`)
+        .filter((fk) => fk.table === 'usuarios')
+        .map((fk) => ({ tabela, coluna: fk.from, on_delete: fk.on_delete })),
+    );
+    expect(fks.length).toBeGreaterThan(0);
+    for (const fk of fks) expect(fk).toEqual({ ...fk, on_delete: 'CASCADE' });
+  });
+
   it('e-mail do usuário é único sem diferenciar maiúsculas', () => {
     novoUsuario('Admin@Teste.com');
     expect(() => novoUsuario('admin@teste.com')).toThrow(/UNIQUE/);

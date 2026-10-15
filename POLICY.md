@@ -68,7 +68,9 @@ Os dados pessoais não são vendidos nem compartilhados. Os únicos terceiros en
 
 ## Exclusão dos dados
 
-- Você pode **excluir sua conta permanentemente** na tela de perfil do app. A exclusão apaga, de imediato e em cascata, o seu cadastro e tudo o que você criou (por exemplo, as chaves de acesso de agentes). Ela não pode ser desfeita.
+- Você pode **excluir sua conta permanentemente** na tela de perfil do app, confirmando a sua senha. A exclusão apaga, de imediato e em cascata, o seu cadastro (nome, e-mail, hash da senha, datas de acesso) e tudo o que você criou (hoje, as chaves de acesso de agentes, que deixam de funcionar na hora). Ela não pode ser desfeita, e as suas sessões abertas são encerradas.
+- Se você for o último administrador ativo, a exclusão é recusada até que outro administrador seja definido, para o sistema não ficar sem administração.
+- O e-mail da conta não pode ser alterado; o nome e a senha podem ser alterados na tela de perfil, e a troca de senha encerra as sessões abertas em outros dispositivos.
 - Registros removidos com exclusão lógica (marcados como excluídos, mas recuperáveis) também são apagados quando a conta é excluída.
 - Cópias de segurança anteriores à exclusão podem conter seus dados até serem substituídas pelo ciclo normal de backups.
 - Os logs de acesso são apagados automaticamente pela rotação (limite de 50 MB por serviço).

@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Dependencies,
   Get,
   HttpCode,
   Module,
+  Patch,
   Post,
   Req,
   Res,
@@ -47,6 +49,16 @@ const esquemaAceitar = Joi.object({
 
 const MENSAGEM_RECUPERACAO =
   'Se o e-mail estiver cadastrado, você receberá em instantes um link para redefinir a senha.';
+
+// Perfil (tarefa 017): e-mail, papel e ativo não mudam por aqui (400 se enviados).
+const esquemaPerfil = Joi.object({
+  nome: Joi.string().trim().min(1).max(100),
+  senha_atual: Joi.string().max(200),
+  nova_senha: Joi.string().max(200),
+})
+  .min(1)
+  .and('senha_atual', 'nova_senha');
+const esquemaExcluirConta = Joi.object({ senha: Joi.string().max(200).required() });
 
 const esquemaLogin = Joi.object({
   email: Joi.string().trim().email().max(254).required(),
@@ -107,6 +119,26 @@ export class AuthController {
   @Get('eu')
   eu(@Req() req) {
     return req.usuario;
+  }
+
+  @UseGuards(ThrottlerGuard)
+  @limitar('senha_atual')
+  @Patch('eu')
+  async atualizarPerfil(@Body() corpo, @Req() req, @Res({ passthrough: true }) res) {
+    const dados = new ValidacaoPipe(esquemaPerfil).transform(corpo ?? {});
+    const resultado = await this.auth.atualizarPerfil(req.usuario.id, dados);
+    return resultado.refresh ? this.responder(res, resultado) : resultado.corpo;
+  }
+
+  // Exclusão permanente da própria conta (tarefa 017), confirmada pela senha.
+  @UseGuards(ThrottlerGuard)
+  @limitar('senha_atual')
+  @Delete('eu')
+  @HttpCode(204)
+  async excluirConta(@Body() corpo, @Req() req, @Res({ passthrough: true }) res) {
+    const { senha } = new ValidacaoPipe(esquemaExcluirConta).transform(corpo ?? {});
+    await this.auth.excluirConta(req.usuario.id, senha);
+    res.clearCookie(COOKIE_REFRESH, this.opcoesCookie());
   }
 
   // Recuperação de senha (tarefa 014). O token vai sempre no corpo, nunca na URL (logs).
