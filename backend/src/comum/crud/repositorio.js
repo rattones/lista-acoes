@@ -17,12 +17,14 @@ const paraSqlite = (dados) =>
 //   tabela    nome da tabela
 //   ocultas   colunas que nunca saem da API (ex.: senha_hash)
 //   preparar  (dados, db) => dados, ajuste antes de gravar (ex.: campos derivados)
+//   apresentar (registro) => registro, ajuste do que sai da API (ex.: JSON em TEXT)
 export class Repositorio {
-  constructor(db, { tabela, ocultas = [], preparar = (dados) => dados }) {
+  constructor(db, { tabela, ocultas = [], preparar = (dados) => dados, apresentar }) {
     this.db = db;
     this.tabela = tabela;
     this.ocultas = ocultas;
     this.preparar = preparar;
+    this.apresentar = (registro) => (registro && apresentar ? apresentar(registro) : registro);
   }
 
   // Lidas na primeira consulta: a API pode subir antes das migrations (ex.: testes).
@@ -63,7 +65,8 @@ export class Repositorio {
       .prepare(
         `SELECT ${this.selecao} FROM ${this.tabela} ${where} ORDER BY ${ordem} LIMIT @limite OFFSET @deslocamento`,
       )
-      .all({ ...params, limite: porPagina, deslocamento: (pagina - 1) * porPagina });
+      .all({ ...params, limite: porPagina, deslocamento: (pagina - 1) * porPagina })
+      .map(this.apresentar);
 
     return {
       dados,
@@ -78,19 +81,21 @@ export class Repositorio {
 
   obter(id, { incluirExcluidos = false } = {}) {
     const filtro = incluirExcluidos ? '' : 'AND excluido_em IS NULL';
-    return this.db
-      .prepare(`SELECT ${this.selecao} FROM ${this.tabela} WHERE id = ? ${filtro}`)
-      .get(id);
+    return this.apresentar(
+      this.db.prepare(`SELECT ${this.selecao} FROM ${this.tabela} WHERE id = ? ${filtro}`).get(id),
+    );
   }
 
   criar(dados) {
     const valores = paraSqlite(this.preparar(dados, this.db));
     const campos = Object.keys(valores);
-    return this.db
-      .prepare(
-        `INSERT INTO ${this.tabela} (${campos.join(', ')}) VALUES (${campos.map((c) => `@${c}`).join(', ')}) RETURNING ${this.selecao}`,
-      )
-      .get(valores);
+    return this.apresentar(
+      this.db
+        .prepare(
+          `INSERT INTO ${this.tabela} (${campos.join(', ')}) VALUES (${campos.map((c) => `@${c}`).join(', ')}) RETURNING ${this.selecao}`,
+        )
+        .get(valores),
+    );
   }
 
   // Só registros não excluídos; devolve undefined se não encontrar.
@@ -98,11 +103,13 @@ export class Repositorio {
     const valores = paraSqlite(this.preparar(dados, this.db));
     const atribuicoes = Object.keys(valores).map((campo) => `${campo} = @${campo}`);
     if (this.colunas.includes('atualizado_em')) atribuicoes.push(`atualizado_em = ${AGORA}`);
-    return this.db
-      .prepare(
-        `UPDATE ${this.tabela} SET ${atribuicoes.join(', ')} WHERE id = @id AND excluido_em IS NULL RETURNING ${this.selecao}`,
-      )
-      .get({ ...valores, id });
+    return this.apresentar(
+      this.db
+        .prepare(
+          `UPDATE ${this.tabela} SET ${atribuicoes.join(', ')} WHERE id = @id AND excluido_em IS NULL RETURNING ${this.selecao}`,
+        )
+        .get({ ...valores, id }),
+    );
   }
 
   excluirLogico(id) {
@@ -116,11 +123,13 @@ export class Repositorio {
 
   // Só registros excluídos; devolve undefined se não houver o que restaurar.
   restaurar(id) {
-    return this.db
-      .prepare(
-        `UPDATE ${this.tabela} SET excluido_em = NULL WHERE id = ? AND excluido_em IS NOT NULL RETURNING ${this.selecao}`,
-      )
-      .get(id);
+    return this.apresentar(
+      this.db
+        .prepare(
+          `UPDATE ${this.tabela} SET excluido_em = NULL WHERE id = ? AND excluido_em IS NOT NULL RETURNING ${this.selecao}`,
+        )
+        .get(id),
+    );
   }
 
   excluirFisico(id) {

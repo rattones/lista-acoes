@@ -209,9 +209,9 @@ describe('API keys dos agentes', () => {
 
     it('revogar de novo → 409; chave inexistente → 404; leitor → 403', async () => {
       const { id } = await novaChave(['precos:write']);
-      expect((await ctx.http(ctx.tokens.leitor).post(`/v1/agentes-tokens/${id}/revogar`)).status).toBe(
-        403,
-      );
+      expect(
+        (await ctx.http(ctx.tokens.leitor).post(`/v1/agentes-tokens/${id}/revogar`)).status,
+      ).toBe(403);
       expect(registro(id).revogado_em).toBeNull();
       expect((await admin.post(`/v1/agentes-tokens/${id}/revogar`)).status).toBe(200);
       const repetida = await admin.post(`/v1/agentes-tokens/${id}/revogar`);

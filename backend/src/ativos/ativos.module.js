@@ -1,5 +1,6 @@
 import { Controller, Dependencies, Module } from '@nestjs/common';
 import Joi from 'joi';
+import { EscoposCrud } from '../auth/decorators';
 import { ControladorCrud } from '../comum/crud/controlador-crud';
 import { data, esquemaAtualizacao, esquemaListagem, texto, url } from '../comum/crud/esquemas';
 import { Repositorio } from '../comum/crud/repositorio';
@@ -41,6 +42,7 @@ const esquemas = {
   }),
 };
 
+@EscoposCrud({ leitura: 'ativos:read' })
 @Controller('ativos')
 @Dependencies(REPOSITORIO_ATIVOS)
 export class AtivosController extends ControladorCrud {

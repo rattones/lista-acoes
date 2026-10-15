@@ -163,6 +163,30 @@ Login por e-mail e senha. Toda rota exige `Authorization: Bearer <token_acesso>`
 
 Sem token: 401 `nao_autenticado`. Papel insuficiente: 403 `proibido`. No código, `@Publico()` libera uma rota e `@Papeis('admin')` restringe uma rota ou um controller.
 
+### API keys dos agentes
+
+Os agentes autenticam com uma API key, no mesmo cabeçalho do usuário: `Authorization: Bearer la_<prefixo>_<segredo>`. Cada chave é de um agente, tem escopos, não expira e pode ser revogada. Só o admin gerencia as chaves.
+
+| Rota                                  | O que faz                                                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/agentes-tokens`             | `{ nome, escopos }` → 201 com o registro e a `chave` completa, **exibida só nesta resposta**                         |
+| `GET /v1/agentes-tokens`              | Lista paginada (como no CRUD), sem segredo nem hash; inclui as revogadas (`revogado_em`)                             |
+| `GET /v1/agentes-tokens/:id`          | Obtém uma chave, sem segredo nem hash                                                                                |
+| `GET /v1/agentes-tokens/escopos`      | Escopos disponíveis                                                                                                  |
+| `POST /v1/agentes-tokens/:id/revogar` | Revoga a chave (200); 409 se já está revogada                                                                        |
+| `DELETE`, `POST /:id/restaurar`       | Exclusão lógica, física (`?permanente=true`) e restauração, como no CRUD. Não há `PATCH`: crie outra chave e revogue |
+
+| Escopo                                                          | Libera                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------- |
+| `ativos:read`                                                   | `GET /v1/ativos` e `GET /v1/ativos/:id`                 |
+| `execucoes:read`, `sinais:read`, `precos:read`, `noticias:read` | Listar e obter o recurso                                |
+| `execucoes:write`, `sinais:write`                               | `POST` e `PATCH` do recurso                             |
+| `precos:write`, `noticias:write`                                | `POST` e `PATCH` do recurso e `POST /v1/{recurso}/lote` |
+
+- **Armazenamento:** a chave é `la_` + prefixo de 8 caracteres hexadecimais (público, usado na busca) + segredo de 32 (128 bits). O banco guarda só o prefixo e o SHA-256 do segredo, comparado em tempo constante. Cada uso atualiza `ultimo_uso_em`.
+- **Validade:** chave inválida, revogada ou excluída → 401 `nao_autenticado`. A chave também deixa de valer enquanto quem a criou não for um admin ativo e não excluído, e é apagada se o usuário for apagado.
+- **Permissões:** rota fora dos escopos da chave → 403 `proibido`. Exclusão, restauração, `incluir_excluidos`, `/usuarios`, `/agentes-tokens` e `/auth` nunca aceitam API key. No código, `@Escopos('precos:write')` libera uma rota para a chave e `@EscoposCrud({ leitura, escrita })` libera as rotas herdadas do CRUD; a rota continua aceitando o JWT de usuário, com as regras de `@Papeis`.
+
 ### CRUD dos recursos
 
 Recursos: `ativos`, `execucoes`, `sinais`, `precos` (tabela `precos_diarios`), `noticias` e `usuarios`. Todas as rotas exigem autenticação (ver [Autenticação e permissões](#autenticação-e-permissões)).

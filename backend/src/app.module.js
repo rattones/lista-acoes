@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { AgentesTokensModule } from './agentes-tokens/agentes-tokens.module';
 import { opcoesPinoHttp } from './comum/log';
 import { validarConfig } from './config/configuracao';
 import { AtivosModule } from './ativos/ativos.module';
@@ -36,6 +37,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     PrecosModule,
     NoticiasModule,
     UsuariosModule,
+    AgentesTokensModule,
   ],
   controllers: [HealthController],
 })
