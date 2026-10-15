@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "CSCO",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "regularMarketTime": 1792076375,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 109.07,
+          "chartPreviousClose": 113.64,
+          "longName": "Cisco Systems, Inc.",
+          "shortName": "Cisco Systems, Inc.",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076375],
+        "indicators": {
+          "quote": [
+            {
+              "volume": [5263036],
+              "open": [112.16999816894531],
+              "close": [109.06999969482422],
+              "high": [112.3949966430664],
+              "low": [108.4800033569336]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [109.06999969482422]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

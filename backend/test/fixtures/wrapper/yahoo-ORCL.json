@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "ORCL",
+          "exchangeName": "NYQ",
+          "fullExchangeName": "NYSE",
+          "instrumentType": "EQUITY",
+          "regularMarketTime": 1792076372,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 131.41,
+          "chartPreviousClose": 130.55,
+          "longName": "Oracle Corporation",
+          "shortName": "Oracle Corporation",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076372],
+        "indicators": {
+          "quote": [
+            {
+              "low": [128.0],
+              "volume": [12847975],
+              "open": [128.07000732421875],
+              "high": [132.33999633789062],
+              "close": [131.41000366210938]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [131.41000366210938]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

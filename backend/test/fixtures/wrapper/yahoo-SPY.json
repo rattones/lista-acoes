@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "SPY",
+          "exchangeName": "PCX",
+          "fullExchangeName": "NYSEArca",
+          "instrumentType": "ETF",
+          "regularMarketTime": 1792076378,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 769.57,
+          "chartPreviousClose": 769.6,
+          "longName": "State Street SPDR S&P 500 ETF Trust",
+          "shortName": "State Street SPDR S&P 500 ETF T",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076378],
+        "indicators": {
+          "quote": [
+            {
+              "open": [766.25],
+              "volume": [14080795],
+              "high": [769.6599731445312],
+              "low": [764.4400024414062],
+              "close": [769.5700073242188]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [769.5700073242188]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "TSLA",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "regularMarketTime": 1792076377,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 361.46,
+          "chartPreviousClose": 367.16,
+          "longName": "Tesla, Inc.",
+          "shortName": "Tesla, Inc.",
+          "dataGranularity": "1d",
+          "range": "1d"
+        },
+        "timestamp": [1792076377],
+        "indicators": {
+          "quote": [
+            {
+              "open": [360.5799865722656],
+              "low": [355.2300109863281],
+              "high": [361.6000061035156],
+              "close": [361.4599914550781],
+              "volume": [10902052]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [361.4599914550781]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}
