@@ -13,6 +13,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- App: leitura do token dos links de e-mail (`#t=`, `#c=`, com `?` aceito) e formatos de data, papel e status compartilhados em `app/src/utils/` (tarefa 020).
+- Testes do frontend: o app é desmontado depois de cada teste (`enableAutoUnmount`) e o setup simula o `visualViewport`, usado pelos diálogos do Vuetify (tarefa 020).
 - Cliente HTTP do app: envia o cookie (`credentials: 'include'`) e o token de acesso, renova a sessão uma vez em 401 e repete a requisição, aceita corpo no `DELETE` e converte falha de rede em `ErroApi` `sem_conexao` (tarefa 019).
 - A página inicial do app vira o Dashboard (só com login); Ativos, Usuários, API keys e Meu perfil aparecem como "em breve" até as tarefas 020 a 023 (tarefa 019).
 - POLICY: o wrapper consulta Yahoo, Binance e CoinGecko enviando só o código do ativo, sem dados pessoais (tarefa 018).
@@ -44,6 +46,10 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: tela de usuários (`/usuarios`, só admin) com papel, status, último login, ativar/desativar, editar, exclusão lógica ou física com confirmação e restauração dos excluídos (tarefa 020).
+- App: edição de usuário (`/usuarios/:id`, só admin) com nome, papel e status; e-mail só leitura; o admin não muda o próprio papel nem o próprio status (tarefa 020).
+- App: diálogo "Convidar usuário" (e-mail + papel), com confirmação, aviso de 72 horas sem cancelamento e "Reenviar" (tarefa 020).
+- App: cadastro por convite (`/cadastro#c=`), com o e-mail do convite desabilitado e confirmado por checkbox, e avisos para convite expirado, inválido ou de e-mail já cadastrado (tarefa 020).
 - App: login, recuperação e redefinição de senha (`/login`, `/recuperar-senha`, `/redefinir-senha#t=`), com mensagens para credenciais inválidas, conta bloqueada (com o tempo restante), excesso de tentativas, falta de conexão e link expirado ou já usado (tarefa 019).
 - App: store `auth` (Pinia) com login, logout, sessão retomada pelo cookie do refresh ao abrir o app e renovação automática do token de acesso, que fica só em memória (tarefa 019).
 - App: guards de rota (rotas privadas exigem login, com volta à página pedida; rotas de admin exigem papel `admin`) e layout com menu lateral: usuário logado, Dashboard, Ativos, Usuários e API keys (só admin), Meu perfil e Sair (tarefa 019).

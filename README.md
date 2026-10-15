@@ -272,18 +272,23 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Sessão** (store `auth`, `app/src/stores/auth.js`): `login`, `logout`, `renovar` e `iniciar`. O token de acesso fica só em memória, nunca em `localStorage`; ao abrir o app, `iniciar()` retoma a sessão pelo refresh token (cookie `httpOnly`). O token é renovado sozinho um minuto antes de expirar, e renovações simultâneas viram um pedido só.
 - **Rotas:**
 
-  | Rota                         | Acesso   | Tela                                                        |
-  | ---------------------------- | -------- | ----------------------------------------------------------- |
-  | `/login`                     | Pública  | Login (`?volta=` leva de volta à página pedida)             |
-  | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                  |
-  | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito) |
-  | `/`                          | Logado   | Dashboard (gráfico na tarefa 024)                           |
-  | `/ativos`, `/perfil`         | Logado   | Em breve (tarefas 021 e 022)                                |
-  | `/usuarios`, `/api-keys`     | Só admin | Em breve (tarefas 020 e 023)                                |
-  | qualquer outra               | Pública  | 404, mantendo o endereço digitado                           |
+  | Rota                         | Acesso   | Tela                                                                          |
+  | ---------------------------- | -------- | ----------------------------------------------------------------------------- |
+  | `/login`                     | Pública  | Login (`?volta=` leva de volta à página pedida)                               |
+  | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                                    |
+  | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito)                   |
+  | `/cadastro#c=<token>`        | Pública  | Cadastro por convite: e-mail do convite só confirmado (`?c=` também é aceito) |
+  | `/`                          | Logado   | Dashboard (gráfico na tarefa 024)                                             |
+  | `/ativos`, `/perfil`         | Logado   | Em breve (tarefas 021 e 022)                                                  |
+  | `/usuarios`                  | Só admin | Lista, convites, ativar/desativar, excluir e restaurar                        |
+  | `/usuarios/:id`              | Só admin | Editar nome, papel e status (e-mail só leitura)                               |
+  | `/api-keys`                  | Só admin | Em breve (tarefa 023)                                                         |
+  | qualquer outra               | Pública  | 404, mantendo o endereço digitado                                             |
 
   Sem login, rota privada → `/login?volta=<rota>`; leitor em rota de admin → dashboard. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
 
+- **Usuários** (só admin): lista com papel, status (Ativo, Inativo, Bloqueado pelas tentativas de login, Excluído) e último login; ativar/desativar, editar, excluir (lógica ou, marcando a opção, física, que apaga também o que o usuário criou) e restaurar com "Mostrar excluídos". O admin não se desativa, não se exclui e não muda o próprio papel por essas telas (para isso há o perfil, tarefa 022).
+- **Convites:** "Convidar usuário" envia `{ email, papel }` (papel padrão: leitor) e mostra a confirmação, com o aviso de que o link vale 72 horas e não pode ser cancelado; "Reenviar" gera um link novo sem invalidar o anterior. O convidado abre `/cadastro#c=<token>`: o e-mail do convite aparece desabilitado e o botão só habilita com "Confirmo que este é meu e-mail" marcado. Convite expirado, inválido ou de e-mail já cadastrado mostra o aviso. Sem SMTP configurado (DEV atual), a API responde 503 ao convidar.
 - **Layout:** logado, menu lateral (`v-navigation-drawer`) com nome, e-mail e papel do usuário e os tópicos Dashboard, Ativos, Usuários e API keys (só admin), Meu perfil e Sair. Telas públicas não têm menu.
 - **Mensagens:** credenciais inválidas, conta bloqueada com o tempo restante (`detalhes.segundos_restantes` do 423), excesso de tentativas (429), sem conexão, e link de redefinição expirado ou já usado, com o link para pedir outro.
 - **Testes:** `frontend/test/utils.js` tem a API falsa (`criarApiFalsa`, `apiComSessao`) instalada como `fetch` global e `montarApp(rota)`, que monta o app inteiro (Vuetify, router em memória e Pinia).

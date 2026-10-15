@@ -15,6 +15,7 @@ import {
 } from '@mdi/js';
 import { TEMAS } from './plugins/vuetify.js';
 import { useAuthStore } from './stores/auth.js';
+import { NOMES_PAPEIS } from './utils/formatos.js';
 
 const tema = useTheme();
 const escuro = computed(() => tema.global.current.value.dark);
@@ -26,8 +27,6 @@ const { mobile } = useDisplay();
 // Telas públicas (login, recuperação, 404) não têm o menu lateral.
 const comMenu = computed(() => auth.logado && !rota.meta.publica);
 const menuAberto = ref(!mobile.value);
-
-const PAPEIS = { admin: 'Administrador', leitor: 'Leitor' };
 
 // Tópicos do menu (tela 4 do PROJETO.md); admin: só para administradores.
 const TOPICOS = [
@@ -80,7 +79,7 @@ async function sair() {
         >
           <template #append>
             <v-chip size="x-small" :color="auth.ehAdmin ? 'secondary' : undefined" label>
-              {{ PAPEIS[auth.usuario.papel] ?? auth.usuario.papel }}
+              {{ NOMES_PAPEIS[auth.usuario.papel] ?? auth.usuario.papel }}
             </v-chip>
           </template>
         </v-list-item>

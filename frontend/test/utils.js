@@ -28,7 +28,7 @@ export const sessao = (papel = 'admin', token = `token-${papel}`) => ({
 
 const SEM_SESSAO = [401, { erro: 'nao_autenticado', mensagem: 'Sessão inválida ou expirada' }];
 
-// API falsa: rotas { 'POST /v1/auth/login': [status, corpo] | (corpo, opcoes) => [status, corpo] }.
+// API falsa: rotas { 'POST /v1/auth/login': [status, corpo] | (corpo, opcoes, url) => [status, corpo] }.
 // Sem sessão por padrão (refresh → 401). Instala-se como fetch global.
 export function criarApiFalsa(rotas = {}) {
   const chamadas = [];
@@ -37,11 +37,11 @@ export function criarApiFalsa(rotas = {}) {
     const { pathname } = new URL(url, 'http://app.teste');
     const chave = `${opcoes.method ?? 'GET'} ${pathname}`;
     const corpo = opcoes.body ? JSON.parse(opcoes.body) : undefined;
-    chamadas.push({ chave, corpo, opcoes });
+    chamadas.push({ chave, url, corpo, opcoes });
     const rota = todas[chave];
     if (!rota)
       return resposta(404, { erro: 'nao_encontrado', mensagem: `sem rota falsa: ${chave}` });
-    const [status, dados] = typeof rota === 'function' ? await rota(corpo, opcoes) : rota;
+    const [status, dados] = typeof rota === 'function' ? await rota(corpo, opcoes, url) : rota;
     return resposta(status, dados);
   });
   vi.stubGlobal('fetch', fetch);
