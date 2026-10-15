@@ -1,15 +1,70 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/auth.js';
 
+const EmBreve = () => import('../views/EmBreveView.vue');
+
+// meta.publica: sem login (e sem o menu lateral). meta.admin: só papel admin.
+// As telas "em breve" são substituídas nas tarefas 020 a 024.
 const rotas = [
-  { path: '/', name: 'inicio', component: () => import('../views/InicioView.vue') },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue'),
+    meta: { publica: true, soDeslogado: true },
+  },
+  {
+    path: '/recuperar-senha',
+    name: 'recuperar-senha',
+    component: () => import('../views/RecuperarSenhaView.vue'),
+    meta: { publica: true },
+  },
+  {
+    path: '/redefinir-senha',
+    name: 'redefinir-senha',
+    component: () => import('../views/RedefinirSenhaView.vue'),
+    meta: { publica: true },
+  },
+  {
+    path: '/',
+    name: 'inicio',
+    component: () => import('../views/InicioView.vue'),
+    meta: { titulo: 'Dashboard' },
+  },
+  { path: '/ativos', name: 'ativos', component: EmBreve, meta: { titulo: 'Ativos' } },
+  {
+    path: '/usuarios',
+    name: 'usuarios',
+    component: EmBreve,
+    meta: { titulo: 'Usuários', admin: true },
+  },
+  {
+    path: '/api-keys',
+    name: 'api-keys',
+    component: EmBreve,
+    meta: { titulo: 'API keys', admin: true },
+  },
+  { path: '/perfil', name: 'perfil', component: EmBreve, meta: { titulo: 'Meu perfil' } },
   // Rota desconhecida: mostra a 404 mantendo o endereço digitado.
   {
     path: '/:caminho(.*)*',
     name: 'nao-encontrado',
     component: () => import('../views/NaoEncontradoView.vue'),
+    meta: { publica: true },
   },
 ];
 
-export function criarRouter(history = createWebHistory()) {
-  return createRouter({ history, routes: rotas });
+export function criarRouter(history = createWebHistory(), pinia) {
+  const router = createRouter({ history, routes: rotas });
+
+  router.beforeEach(async (para) => {
+    const auth = useAuthStore(pinia);
+    await auth.iniciar();
+    if (para.meta.soDeslogado && auth.logado) return { name: 'inicio' };
+    if (para.meta.publica) return true;
+    if (!auth.logado) return { name: 'login', query: { volta: para.fullPath } };
+    if (para.meta.admin && !auth.ehAdmin) return { name: 'inicio' };
+    return true;
+  });
+
+  return router;
 }

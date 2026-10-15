@@ -93,6 +93,18 @@ describe('/v1/auth', () => {
       expect(cookieRefresh(certa)).toBeUndefined();
     });
 
+    it('o 423 informa quanto falta para o desbloqueio (para o app mostrar)', async () => {
+      ctx.db
+        .prepare(
+          "UPDATE usuarios SET bloqueado_ate = datetime('now','localtime','+10 minutes') WHERE email = ?",
+        )
+        .run(ADMIN);
+      const res = await login(ADMIN);
+      expect(res.status).toBe(423);
+      expect(res.body.detalhes.segundos_restantes).toBeGreaterThan(595);
+      expect(res.body.detalhes.segundos_restantes).toBeLessThanOrEqual(600);
+    });
+
     it('depois do prazo do bloqueio, entra', async () => {
       ctx.db
         .prepare(

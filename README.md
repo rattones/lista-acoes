@@ -152,7 +152,7 @@ Login por e-mail e senha. Toda rota exige `Authorization: Bearer <token_acesso>`
 
 - **Tokens:** JWT de acesso de 15 minutos; refresh token de 7 dias, só em cookie `httpOnly`, `SameSite=Strict`, `Path=/v1/auth` e `Secure` em produção (`COOKIE_SEGURO`). Assinados com `JWT_SEGREDO`.
 - **Sessão:** os tokens levam a `versao_sessao` do usuário. A cada requisição, a API confere no banco se o usuário existe, está ativo, não foi excluído e tem a mesma versão. Logout (e, nas próximas tarefas, troca de senha) incrementa a versão e derruba na hora os tokens já emitidos. Papel, desativação e exclusão valem imediatamente.
-- **Bloqueio:** 5 senhas erradas seguidas bloqueiam a conta por 15 minutos (423 `bloqueado`). Durante o bloqueio, nem a senha certa entra, e a senha não é conferida. Login certo zera as tentativas e registra `ultimo_login_em`.
+- **Bloqueio:** 5 senhas erradas seguidas bloqueiam a conta por 15 minutos (423 `bloqueado`, com `detalhes.segundos_restantes`). Durante o bloqueio, nem a senha certa entra, e a senha não é conferida. Login certo zera as tentativas e registra `ultimo_login_em`.
 - **Erros:** e-mail inexistente, senha errada, usuário inativo ou excluído → o mesmo 401 `E-mail ou senha inválidos`, com tempo de resposta equivalente.
 - **Recuperação de senha:** link sem estado no banco, válido por 24 horas: `APP_URL/redefinir-senha#t=<token>`. O token (`src/auth/token-assinado.js`) é o payload `{ id, email, exp }` em base64url mais um HMAC-SHA256 com chave derivada do `JWT_SEGREDO` e do `senha_hash` atual: trocar a senha invalida todos os links já enviados. O token vai no fragmento do link e no corpo das requisições, nunca na URL (que vai para os logs). O pedido responde 202 na hora, exista ou não o e-mail, e o envio acontece em segundo plano. Limites: 3 pedidos por hora por e-mail e 10 por 15 minutos por IP.
 - **Convites:** só admin convida e escolhe o papel. Link sem estado, válido por 72 horas: `APP_URL/cadastro#c=<token>`, com `{ email, papel, por, exp }` assinado por uma chave derivada do `JWT_SEGREDO` só para convites. O e-mail do novo usuário vem do token: o formulário só o confirma (`email_confirmado`). O convite deixa de valer quando expira, quando o e-mail é cadastrado ou quando quem convidou deixa de ser um admin ativo. Não há cancelamento, e reenviar gera um link novo sem invalidar o anterior. Limite de 20 validações ou aceites por 15 minutos por IP.
@@ -268,8 +268,25 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 | `npm run build -w frontend`       | Gera `dist/app` e `dist/landing`           |
 | `npm run preview -w frontend`     | Serve o build do app                       |
 
-- **API:** o cliente em `app/src/api/cliente.js` usa `VITE_API_URL` como base; erros no formato `{ erro, mensagem, detalhes }` viram `ErroApi` (com `status`, `codigo`, `message` e `detalhes`).
-- **Rotas:** `/` (início) e 404 para qualquer rota desconhecida, mantendo o endereço digitado. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
+- **API:** o cliente em `app/src/api/cliente.js` usa `VITE_API_URL` como base; erros no formato `{ erro, mensagem, detalhes }` viram `ErroApi` (com `status`, `codigo`, `message` e `detalhes`); falha de rede vira `ErroApi` com `codigo: 'sem_conexao'`. Envia sempre o cookie (`credentials: 'include'`) e, com sessão aberta, o `Authorization: Bearer`. Em 401 fora de `/v1/auth/`, renova a sessão uma vez e repete a requisição.
+- **Sessão** (store `auth`, `app/src/stores/auth.js`): `login`, `logout`, `renovar` e `iniciar`. O token de acesso fica só em memória, nunca em `localStorage`; ao abrir o app, `iniciar()` retoma a sessão pelo refresh token (cookie `httpOnly`). O token é renovado sozinho um minuto antes de expirar, e renovações simultâneas viram um pedido só.
+- **Rotas:**
+
+  | Rota                         | Acesso   | Tela                                                        |
+  | ---------------------------- | -------- | ----------------------------------------------------------- |
+  | `/login`                     | Pública  | Login (`?volta=` leva de volta à página pedida)             |
+  | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                  |
+  | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito) |
+  | `/`                          | Logado   | Dashboard (gráfico na tarefa 024)                           |
+  | `/ativos`, `/perfil`         | Logado   | Em breve (tarefas 021 e 022)                                |
+  | `/usuarios`, `/api-keys`     | Só admin | Em breve (tarefas 020 e 023)                                |
+  | qualquer outra               | Pública  | 404, mantendo o endereço digitado                           |
+
+  Sem login, rota privada → `/login?volta=<rota>`; leitor em rota de admin → dashboard. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
+
+- **Layout:** logado, menu lateral (`v-navigation-drawer`) com nome, e-mail e papel do usuário e os tópicos Dashboard, Ativos, Usuários e API keys (só admin), Meu perfil e Sair. Telas públicas não têm menu.
+- **Mensagens:** credenciais inválidas, conta bloqueada com o tempo restante (`detalhes.segundos_restantes` do 423), excesso de tentativas (429), sem conexão, e link de redefinição expirado ou já usado, com o link para pedir outro.
+- **Testes:** `frontend/test/utils.js` tem a API falsa (`criarApiFalsa`, `apiComSessao`) instalada como `fetch` global e `montarApp(rota)`, que monta o app inteiro (Vuetify, router em memória e Pinia).
 - **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
 - **Landing page:** o link "Acessar o app" usa `VITE_APP_URL` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro: usuários entram por convite.
 

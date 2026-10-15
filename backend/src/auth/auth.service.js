@@ -40,7 +40,9 @@ export class AuthService {
     return this.db
       .prepare(
         `SELECT id, email, nome, papel, senha_hash, ativo, excluido_em, versao_sessao,
-                bloqueado_ate > datetime('now','localtime') AS bloqueado
+                bloqueado_ate > datetime('now','localtime') AS bloqueado,
+                CAST(round((julianday(bloqueado_ate) - julianday('now','localtime')) * 86400)
+                     AS INTEGER) AS segundos_bloqueio
          FROM usuarios WHERE ${where} = ?`,
       )
       .get(valor);
@@ -64,6 +66,7 @@ export class AuthService {
         {
           erro: 'bloqueado',
           mensagem: 'Conta bloqueada temporariamente por excesso de tentativas. Tente mais tarde.',
+          detalhes: { segundos_restantes: usuario.segundos_bloqueio },
         },
         423,
       );
