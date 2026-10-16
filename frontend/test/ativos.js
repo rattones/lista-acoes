@@ -44,7 +44,8 @@ export const USDT = {
   bolsa: null,
   ticker_google: 'USDT-BRL',
   ticker_yahoo: 'BRL=X',
-  url_historico: 'https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=500',
+  url_historico:
+    'https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=500',
   url_pagina: 'https://www.google.com/finance/quote/USDT-BRL',
   status: 'ativo',
   observacao: 'Yahoo não tem USDT-BRL; os indicadores usam BRL=X.',

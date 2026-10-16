@@ -38,7 +38,9 @@ describe('inclusão de ativo (/ativos/novo)', () => {
     const { wrapper } = await montarApp('/ativos/novo');
     await preVisualizar(wrapper, link);
     expect(falsa.chamou('POST /v1/ativos/pre-visualizar')).toHaveLength(0);
-    expect(wrapper.text()).toMatch(/Google Finance ou do Yahoo Finance/);
+    expect(wrapper.find('[data-teste="erro-link"]').text()).toMatch(
+      /Google Finance ou do Yahoo Finance/,
+    );
     expect(wrapper.find('[data-teste="form-ativo"]').exists()).toBe(false);
   });
 

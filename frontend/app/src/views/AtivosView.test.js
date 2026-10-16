@@ -23,6 +23,8 @@ describe('lista de ativos (/ativos)', () => {
     const { wrapper } = await montarApp('/ativos');
     expect(falsa.chamou('GET /v1/ativos').at(-1).url).toContain('por_pagina=100');
 
+    await vi.waitFor(() => expect(falsa.chamou('GET /v1/precos')).toHaveLength(3));
+    await flushPromises();
     const csco = linha(wrapper, 1).text();
     expect(csco).toContain('CSCO');
     expect(csco).toContain('Cisco Systems');

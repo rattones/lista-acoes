@@ -46,6 +46,9 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: lista de ativos (`/ativos`) com código, nome, tipo, bolsa, status e última cotação, filtros por tipo e status, busca, switch de status com reversão em caso de erro e restauração dos excluídos (admin) (tarefa 021).
+- App: inclusão de ativo (`/ativos/novo`, só admin) a partir do link do Google Finance ou do Yahoo Finance, com o link conferido antes de chamar a API e a confirmação dos dados do `pre-visualizar` na mesma tela (tarefa 021).
+- App: exibição e edição de ativo (`/ativos/:id`) com Salvar (só os campos alterados), Atualizar dados da fonte e Excluir (lógica ou física); leitor só lê (tarefa 021).
 - App: tela de usuários (`/usuarios`, só admin) com papel, status, último login, ativar/desativar, editar, exclusão lógica ou física com confirmação e restauração dos excluídos (tarefa 020).
 - App: edição de usuário (`/usuarios/:id`, só admin) com nome, papel e status; e-mail só leitura; o admin não muda o próprio papel nem o próprio status (tarefa 020).
 - App: diálogo "Convidar usuário" (e-mail + papel), com confirmação, aviso de 72 horas sem cancelamento e "Reenviar" (tarefa 020).

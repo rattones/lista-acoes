@@ -62,7 +62,7 @@ describe('ativo (/ativos/:id)', () => {
       'PATCH /v1/ativos/1': [400, { erro: 'requisicao_invalida', mensagem: 'URL inválida' }],
     });
     const { wrapper, router } = await montarApp('/ativos/1');
-    await preencher(wrapper, 'campo-url_cotacao', 'xx');
+    await preencher(wrapper, 'campo-url_cotacao', 'https://exemplo.com/cotacao');
     await enviar(wrapper, 'form-ativo');
     expect(wrapper.find('[data-teste="erro-ativo"]').text()).toContain('URL inválida');
     expect(router.currentRoute.value.name).toBe('ativo');
@@ -139,7 +139,10 @@ describe('ativo (/ativos/:id)', () => {
 
   it('ativo inexistente mostra o aviso', async () => {
     abrirApi('admin', {
-      'GET /v1/ativos/99': [404, { erro: 'nao_encontrado', mensagem: 'Registro 99 não encontrado' }],
+      'GET /v1/ativos/99': [
+        404,
+        { erro: 'nao_encontrado', mensagem: 'Registro 99 não encontrado' },
+      ],
     });
     const { wrapper } = await montarApp('/ativos/99');
     expect(wrapper.find('[data-teste="ativo-nao-encontrado"]').exists()).toBe(true);

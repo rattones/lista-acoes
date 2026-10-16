@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth.js';
 const EmBreve = () => import('../views/EmBreveView.vue');
 
 // meta.publica: sem login (e sem o menu lateral). meta.admin: só papel admin.
-// As telas "em breve" são substituídas nas tarefas 021 a 024.
+// As telas "em breve" são substituídas nas tarefas 022 a 024.
 const rotas = [
   {
     path: '/login',
@@ -36,7 +36,24 @@ const rotas = [
     component: () => import('../views/InicioView.vue'),
     meta: { titulo: 'Dashboard' },
   },
-  { path: '/ativos', name: 'ativos', component: EmBreve, meta: { titulo: 'Ativos' } },
+  {
+    path: '/ativos',
+    name: 'ativos',
+    component: () => import('../views/AtivosView.vue'),
+    meta: { titulo: 'Ativos' },
+  },
+  {
+    path: '/ativos/novo',
+    name: 'ativo-novo',
+    component: () => import('../views/NovoAtivoView.vue'),
+    meta: { titulo: 'Novo ativo', admin: true },
+  },
+  {
+    path: '/ativos/:id(\\d+)',
+    name: 'ativo',
+    component: () => import('../views/AtivoView.vue'),
+    meta: { titulo: 'Ativo' },
+  },
   {
     path: '/usuarios',
     name: 'usuarios',

@@ -20,3 +20,9 @@ export function statusUsuario(usuario, agora = new Date()) {
   }
   return { texto: 'Ativo', cor: 'success' };
 }
+
+// Data sem hora da API ('AAAA-MM-DD'), sem passar por Date (fuso horário).
+export function formatarData(texto, vazio = '—') {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto ?? '');
+  return partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : texto || vazio;
+}

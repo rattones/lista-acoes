@@ -29,7 +29,7 @@ describe('tela de login', () => {
     const { wrapper, router } = await montarApp('/ativos');
     expect(router.currentRoute.value.fullPath).toBe('/login?volta=/ativos');
     await entrar(wrapper);
-    expect(router.currentRoute.value.name).toBe('ativos');
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('ativos'));
   });
 
   it('não redireciona para outro site (volta precisa ser caminho interno)', async () => {
