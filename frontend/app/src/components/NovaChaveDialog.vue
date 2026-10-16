@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { mdiCheck, mdiContentCopy } from '@mdi/js';
 import { api } from '../api/cliente.js';
+import { copiarTexto } from '../utils/copiar.js';
 import { mensagemDeErro } from '../utils/erros.js';
 
 // Nova API key (tarefa 023): nome do agente + escopos. A chave completa só existe na
@@ -16,6 +17,7 @@ const enviando = ref(false);
 const erro = ref('');
 const chave = ref('');
 const copiada = ref(false);
+const campoChave = ref(null);
 
 const nomeValido = (valor) => Boolean(valor?.trim()) || 'Informe o nome do agente';
 
@@ -53,12 +55,12 @@ async function criar() {
 }
 
 async function copiar() {
-  try {
-    await navigator.clipboard.writeText(chave.value);
-    copiada.value = true;
-  } catch {
-    erro.value = 'Não foi possível copiar. Selecione a chave e copie manualmente.';
-  }
+  erro.value = '';
+  copiada.value = await copiarTexto(chave.value);
+  if (copiada.value) return;
+  // Deixa a chave selecionada: basta Ctrl+C.
+  window.getSelection()?.selectAllChildren(campoChave.value);
+  erro.value = 'Não foi possível copiar. A chave está selecionada: copie manualmente (Ctrl+C).';
 }
 </script>
 
@@ -71,9 +73,12 @@ async function copiar() {
             Copie a chave agora: ela não será exibida novamente.
           </v-alert>
           <div class="d-flex align-center ga-2">
-            <code data-teste="chave-gerada" class="flex-grow-1 pa-2 bg-surface-variant rounded">{{
-              chave
-            }}</code>
+            <code
+              ref="campoChave"
+              data-teste="chave-gerada"
+              class="flex-grow-1 pa-2 bg-surface-variant rounded"
+              >{{ chave }}</code
+            >
             <v-btn
               data-teste="copiar-chave"
               :prepend-icon="copiada ? mdiCheck : mdiContentCopy"
