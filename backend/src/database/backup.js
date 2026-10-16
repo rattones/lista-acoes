@@ -13,7 +13,12 @@ export function verificarBackup(arquivo) {
     if (integridade !== 'ok') {
       throw new Error(`Falha na verificação de integridade de ${arquivo}: ${integridade}`);
     }
-    const contar = (tabela) => copia.prepare(`SELECT COUNT(*) AS n FROM ${tabela}`).get().n;
+    // Banco vazio ou sem as tabelas (ex.: o atual, guardado numa restauração de desastre):
+    // a contagem vem null em vez de falhar.
+    const existe = (tabela) =>
+      copia.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?").get(tabela);
+    const contar = (tabela) =>
+      existe(tabela) ? copia.prepare(`SELECT COUNT(*) AS n FROM ${tabela}`).get().n : null;
     return { integridade, ativos: contar('ativos'), usuarios: contar('usuarios') };
   } finally {
     copia.close();
