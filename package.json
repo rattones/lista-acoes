@@ -14,12 +14,13 @@
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
     "test": "npm run test:estrutura && npm test --workspaces --if-present",
-    "test:estrutura": "node --test infra/scripts/estrutura.test.mjs",
+    "test:estrutura": "node --test infra/scripts/estrutura.test.mjs infra/scripts/deploy.test.mjs infra/scripts/vps.test.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "smoke:dev": "node --test infra/scripts/smoke-dev.mjs",
     "smoke:prod": "node --test infra/scripts/smoke-prod.mjs",
-    "verifica:https": "node --test infra/scripts/verifica-https.mjs"
+    "verifica:https": "node --test infra/scripts/verifica-https.mjs",
+    "smoke:pos-deploy": "node --test infra/scripts/smoke-pos-deploy.mjs"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.29.9",

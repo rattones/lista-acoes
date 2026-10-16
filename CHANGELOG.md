@@ -14,6 +14,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- `npm run test:estrutura` também roda os testes dos scripts de deploy e da VPS; INSTALL com o passo a passo da primeira subida e do deploy de novas versões (tarefa 027).
 - POLICY: sem referências a tarefas internas nem link para arquivo do repositório (agora também é publicada na landing), e a nota de "versão inicial" dá lugar à data da última atualização (tarefa 026).
 - Docker: a imagem do frontend copia o `POLICY.md` e o compose de DEV o monta no container; o DEV precisa de `up --build` por causa do `marked` (tarefa 026).
 - Especificação do dashboard (tarefa 024): gráfico de preço (linha) e nota (barras) do ativo em foco, cards do resumo atual, tabela de indicadores, últimas notícias e filtros rápidos e avançados guardados na URL. Implementação na tarefa 025, com dados fictícios no DEV (tarefa 032); README e tela inicial passam a citar a 025.
@@ -50,6 +51,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Deploy em PROD (tarefa 027): `infra/scripts/deploy.sh` (pull, marca das imagens em uso como `:anterior`, build, migrations com a imagem nova, `up --wait`, verificação de saúde em HTTPS e rollback para as imagens anteriores), `preparar-vps.sh` (Docker, usuário `deploy`, firewalld só com 22022, 80 e 443), `configurar-ssh.sh` (acesso à VPS por chave e, opcionalmente, sem senha) e `npm run smoke:pos-deploy` (saúde, app, landing e login do admin pelo DNS e HTTPS reais).
 - Landing page completa: o que é, como funciona (coleta → análise → nota → decisão), aviso de acesso por convite e links para o login do app (`VITE_APP_URL/login`); metatags de SEO e Open Graph, favicon e `robots.txt`; sem JavaScript (tarefa 026).
 - Landing: página `/privacidade.html` gerada no build a partir do `POLICY.md` (plugin do Vite com `marked`) (tarefa 026).
 - App: tela de API keys dos agentes (`/api-keys`, só admin) com nome, prefixo, escopos, criação, último uso e status; diálogo "Nova chave" (nome + escopos) que mostra a chave completa uma única vez, com botão copiar, e a descarta ao fechar; revogação com confirmação (tarefa 023).

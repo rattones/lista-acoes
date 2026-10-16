@@ -167,27 +167,68 @@ No HTTP (80), o proxy só atende o desafio da Let's Encrypt (`/.well-known/acme-
 
 ### Primeira subida na VPS
 
-Pré-requisitos:
+VPS: AlmaLinux 9, SSH na porta **22022**. Os scripts ficam em `infra/scripts/` e são testados por `npm run test:estrutura`.
 
-- Registros DNS A de `listadecompras.net`, `www.`, `app.` e `api.` apontando para a VPS.
-- Portas 80 e 443 liberadas.
+1. **DNS:** registros A de `listadecompras.net`, `www.`, `app.` e `api.` apontando para o IP da VPS. Confira com `dig +short A app.listadecompras.net` (os quatro precisam responder antes do certificado).
+2. **Acesso por chave** (na sua máquina): `infra/scripts/configurar-ssh.sh <ip-da-vps>`. Gera `~/.ssh/lista-acoes-vps` se não existir, instala a chave (pede a senha de root uma última vez) e testa o login sem senha. Com `--so-chave`, depois do teste, desliga o login por senha no sshd (o root entra só com chave).
+3. **Preparar a VPS** (como root, uma vez; pode repetir):
 
-Na raiz do repositório, na VPS:
+   ```sh
+   scp -i ~/.ssh/lista-acoes-vps -P 22022 infra/scripts/preparar-vps.sh root@<ip>:/root/
+   ssh -i ~/.ssh/lista-acoes-vps -p 22022 root@<ip> sh /root/preparar-vps.sh
+   ```
 
-```sh
-cp infra/.env-example infra/.env               # preencha LETSENCRYPT_EMAIL e revise o resto
-echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # segredo dos tokens (só de PROD)
-docker compose -f infra/docker-compose.prod.yml build
+   Instala git e firewalld (e o Docker com o Compose, se faltarem), cria o usuário `deploy` no grupo `docker` com as mesmas chaves do root e deixa o firewall só com 22022, 80 e 443. A porta do SSH é liberada antes da recarga, para a sessão não cair. O grupo `docker` equivale a root no host: o usuário existe para o deploy não usar a conta root.
 
-# 1) Ensaio com o ambiente de testes da Let's Encrypt (certificado não confiável)
-LETSENCRYPT_STAGING=1 infra/scripts/certificado-inicial.sh
+4. **Clonar e configurar** (como `deploy`: `ssh -i ~/.ssh/lista-acoes-vps -p 22022 deploy@<ip>`):
 
-# 2) Emissão real (substitui o certificado de teste)
-infra/scripts/certificado-inicial.sh
+   ```sh
+   git clone https://github.com/rattones/lista-acoes.git && cd lista-acoes
+   cp infra/.env-example infra/.env              # LETSENCRYPT_EMAIL; revise o resto
+   cp backend/.env-example backend/.env          # SMTP_USER, SMTP_PASS e MAIL_FROM (obrigatórios em produção)
+   echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # só de PROD, nunca reaproveitado
+   chmod 600 infra/.env backend/.env
+   ```
 
-npm run smoke:prod                             # stack: subdomínios, redirect, HSTS, certbot
-npm run verifica:https                         # de fora: certificado válido, HSTS e 301
-```
+   `NODE_ENV`, `PORT`, `CORS_ORIGENS`, `CONFIAR_PROXY` e `APP_URL` vêm do compose; os valores do `backend/.env` para elas são ignorados.
+
+5. **Subir e emitir o certificado:**
+
+   ```sh
+   docker compose -f infra/docker-compose.prod.yml build
+   docker compose -f infra/docker-compose.prod.yml run --rm --no-deps backend node dist/database/cli.js migrate
+
+   # Ensaio com o ambiente de testes da Let's Encrypt (certificado não confiável)
+   LETSENCRYPT_STAGING=1 infra/scripts/certificado-inicial.sh
+   # Emissão real (substitui o certificado de teste)
+   infra/scripts/certificado-inicial.sh
+   ```
+
+6. **Admin inicial:** `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js admin --email <e-mail> --nome <nome>` (a senha é pedida sem eco).
+7. **Conferir** (na sua máquina):
+
+   ```sh
+   npm run verifica:https                                        # certificado, HSTS e 301 nos quatro hosts
+   ADMIN_EMAIL=<e-mail> ADMIN_SENHA=<senha> npm run smoke:pos-deploy   # saúde, app, landing e login do admin
+   ```
+
+   O `smoke:pos-deploy` usa o DNS e o HTTPS reais. Sem `ADMIN_EMAIL`/`ADMIN_SENHA`, pula o login; a senha não é exibida e o teste não faz logout (que encerraria as sessões do admin). Para não deixar a senha no histórico do shell, comece a linha com um espaço ou use `read -s ADMIN_SENHA` antes.
+
+`npm run smoke:prod` testa a stack localmente (certificado autoassinado), como no CI.
+
+### Deploy de novas versões
+
+Na VPS, como `deploy`, na raiz do repositório: `infra/scripts/deploy.sh`. Depois, na sua máquina, `npm run smoke:pos-deploy`.
+
+1. Confere `infra/.env` e `backend/.env` e recusa se houver alterações locais não commitadas.
+2. `git pull --ff-only`.
+3. Marca as imagens em uso como `lista-acoes-backend:anterior` e `lista-acoes-frontend:anterior`.
+4. Build. Se falhar, nada muda: os containers continuam no commit anterior.
+5. Migrations com a imagem nova, num container avulso, antes de trocar os containers. Se falharem, nada muda.
+6. `up -d --wait` (espera os healthchecks) e `GET https://api.listadecompras.net/v1/health` (10 tentativas, 6 s entre elas).
+7. Se o passo 6 falhar, **volta às imagens anteriores** e informa o commit anterior, para alinhar o código (`git checkout <commit>`).
+
+As migrations só avançam: o rollback volta o código, não o schema. Por isso as migrations devem ser compatíveis com a versão anterior (acrescentar, não remover nem renomear), e o backup do volume antes de um deploy com migration continua recomendado (backup automático na tarefa 028). No primeiro deploy não há imagens anteriores, e o rollback não acontece.
 
 O `certificado-inicial.sh`:
 
