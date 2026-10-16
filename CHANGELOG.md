@@ -46,6 +46,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: tela Meu perfil (`/perfil`) com nome editável, e-mail só leitura, troca de senha (a sessão nova da API é adotada sem sair) e exclusão permanente da própria conta, confirmada pela senha e pela palavra `EXCLUIR`; depois, a sessão local é descartada e o app leva à landing. Mensagem própria para o último admin (tarefa 022).
+- Variável `VITE_LANDING_URL` (padrão `https://www.listadecompras.net`; DEV `http://casaratton.ddns.net:8081`), endereço da landing usado depois da exclusão da conta (tarefa 022).
 - App: lista de ativos (`/ativos`) com código, nome, tipo, bolsa, status e última cotação, filtros por tipo e status, busca, switch de status com reversão em caso de erro e restauração dos excluídos (admin) (tarefa 021).
 - App: inclusão de ativo (`/ativos/novo`, só admin) a partir do link do Google Finance ou do Yahoo Finance, com o link conferido antes de chamar a API e a confirmação dos dados do `pre-visualizar` na mesma tela (tarefa 021).
 - App: exibição e edição de ativo (`/ativos/:id`) com Salvar (só os campos alterados), Atualizar dados da fonte e Excluir (lógica ou física); leitor só lê (tarefa 021).

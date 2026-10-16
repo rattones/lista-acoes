@@ -75,7 +75,28 @@ export const useAuthStore = defineStore('auth', () => {
   // Sessão nova devolvida pela API (ex.: troca de senha no perfil, tarefa 022).
   const atualizarSessao = abrir;
 
+  // Dados novos do usuário logado (ex.: nome alterado no perfil, tarefa 022).
+  function atualizarUsuario(dados) {
+    usuario.value = { ...usuario.value, ...dados };
+  }
+
+  // Encerra só a sessão local, sem chamar a API: depois de excluir a conta (tarefa 022) não
+  // há sessão para encerrar lá, e a API já apagou o cookie do refresh.
+  const descartarSessao = limpar;
+
   api.configurarSessao({ obterToken: () => token.value, renovar });
 
-  return { usuario, token, logado, ehAdmin, login, logout, renovar, iniciar, atualizarSessao };
+  return {
+    usuario,
+    token,
+    logado,
+    ehAdmin,
+    login,
+    logout,
+    renovar,
+    iniciar,
+    atualizarSessao,
+    atualizarUsuario,
+    descartarSessao,
+  };
 });

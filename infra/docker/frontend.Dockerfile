@@ -13,8 +13,10 @@ COPY frontend/ frontend/
 
 ARG VITE_API_URL=https://api.listadecompras.net
 ARG VITE_APP_URL=https://app.listadecompras.net
+ARG VITE_LANDING_URL=https://www.listadecompras.net
 ENV VITE_API_URL=$VITE_API_URL \
-    VITE_APP_URL=$VITE_APP_URL
+    VITE_APP_URL=$VITE_APP_URL \
+    VITE_LANDING_URL=$VITE_LANDING_URL
 RUN npm run build -w frontend
 
 # 2) Nginx sem root: app na porta 8080 e landing na 8081 (o proxy escolhe pelo subdomínio).

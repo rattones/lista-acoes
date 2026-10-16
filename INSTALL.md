@@ -97,7 +97,7 @@ npm run dev -w frontend            # app: http://localhost:8080
 npm run dev:landing -w frontend    # landing: http://localhost:8081
 ```
 
-`VITE_API_URL` (base da API) e `VITE_APP_URL` (link da landing para o app) ficam em `frontend/.env`. Elas são embutidas no build, então mudar o valor exige um novo build.
+`VITE_API_URL` (base da API), `VITE_APP_URL` (link da landing para o app) e `VITE_LANDING_URL` (para onde o app leva depois da exclusão da conta) ficam em `frontend/.env`. Elas são embutidas no build, então mudar o valor exige um novo build.
 
 ## Build do frontend
 

@@ -68,6 +68,7 @@ services:
       VITE_API_URL: ''
       API_PROXY: http://backend:3000
       VITE_APP_URL: http://casaratton.ddns.net:8080
+      VITE_LANDING_URL: http://casaratton.ddns.net:8081
       HOSTS_PERMITIDOS: casa-ratton.local,casaratton.ddns.net
     volumes:
       - ../frontend/app:/app/frontend/app
