@@ -44,7 +44,7 @@ Em DEV (servidor casa-ratton), não há proxy: cada serviço usa sua porta (API 
 | -------------- | --------------------------------------------------------------------------- |
 | Backend        | Node.js 24, NestJS 11 em JavaScript (Babel 7), Joi, pino                    |
 | Banco          | SQLite com better-sqlite3 e SQL puro, migrations `.sql` versionadas         |
-| Frontend       | Vue 3, Vite, Vuetify, Pinia, Vue Router; Chart.js no dashboard (tarefa 024) |
+| Frontend       | Vue 3, Vite, Vuetify, Pinia, Vue Router; Chart.js no dashboard (tarefa 025) |
 | Testes         | Jest + Supertest (backend), Vitest + Vue Test Utils (frontend)              |
 | Infraestrutura | Docker Compose, Nginx, Let's Encrypt (certbot), GitHub Actions              |
 | E-mail         | Gmail SMTP com nodemailer (tarefa 013)                                      |
@@ -278,7 +278,7 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
   | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                                    |
   | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito)                   |
   | `/cadastro#c=<token>`        | Pública  | Cadastro por convite: e-mail do convite só confirmado (`?c=` também é aceito) |
-  | `/`                          | Logado   | Dashboard (gráfico na tarefa 024)                                             |
+  | `/`                          | Logado   | Dashboard (cards, gráfico, indicadores e notícias na tarefa 025)              |
   | `/ativos`                    | Logado   | Lista de ativos (leitor só vê)                                                |
   | `/ativos/novo`               | Só admin | Inclusão por link do Google Finance ou do Yahoo Finance                       |
   | `/ativos/:id`                | Logado   | Exibir; admin edita, atualiza da fonte e exclui                               |

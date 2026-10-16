@@ -14,6 +14,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Especificação do dashboard (tarefa 024): gráfico de preço (linha) e nota (barras) do ativo em foco, cards do resumo atual, tabela de indicadores, últimas notícias e filtros rápidos e avançados guardados na URL. Implementação na tarefa 025, com dados fictícios no DEV (tarefa 032); README e tela inicial passam a citar a 025.
 - App: leitura do token dos links de e-mail (`#t=`, `#c=`, com `?` aceito) e formatos de data, papel e status compartilhados em `app/src/utils/` (tarefa 020).
 - Testes do frontend: o app é desmontado depois de cada teste (`enableAutoUnmount`) e o setup simula o `visualViewport`, usado pelos diálogos do Vuetify (tarefa 020).
 - Cliente HTTP do app: envia o cookie (`credentials: 'include'`) e o token de acesso, renova a sessão uma vez em 401 e repete a requisição, aceita corpo no `DELETE` e converte falha de rede em `ErroApi` `sem_conexao` (tarefa 019).
