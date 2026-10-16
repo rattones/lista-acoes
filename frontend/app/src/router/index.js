@@ -1,10 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
 
-const EmBreve = () => import('../views/EmBreveView.vue');
-
 // meta.publica: sem login (e sem o menu lateral). meta.admin: só papel admin.
-// As telas "em breve" são substituídas nas tarefas 023 e 024.
 const rotas = [
   {
     path: '/login',
@@ -69,7 +66,7 @@ const rotas = [
   {
     path: '/api-keys',
     name: 'api-keys',
-    component: EmBreve,
+    component: () => import('../views/ApiKeysView.vue'),
     meta: { titulo: 'API keys', admin: true },
   },
   {
