@@ -53,6 +53,8 @@ describe('router', () => {
     expect((await navegar('/usuarios')).name).toBe('inicio');
     expect((await navegar('/api-keys')).name).toBe('inicio');
     expect((await navegar('/ativos')).name).toBe('ativos');
+    expect((await navegar('/ativos/1')).name).toBe('ativo');
+    expect((await navegar('/ativos/novo')).name).toBe('inicio');
     expect((await navegar('/perfil')).name).toBe('perfil');
   });
 
@@ -60,5 +62,6 @@ describe('router', () => {
     apiComSessao('admin');
     expect((await navegar('/usuarios')).name).toBe('usuarios');
     expect((await navegar('/api-keys')).name).toBe('api-keys');
+    expect((await navegar('/ativos/novo')).name).toBe('ativo-novo');
   });
 });
