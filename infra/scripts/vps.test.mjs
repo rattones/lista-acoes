@@ -92,6 +92,9 @@ test('preparar-vps: Docker, usuário deploy e firewall com a porta do SSH antes 
   assert.equal(status, 0, saida);
 
   assert.ok(indice(chamadas, 'dnf') >= 0, 'instala pacotes');
+  const pacotes = chamadas.find((c) => c.includes('dnf -y install git'));
+  assert.match(pacotes, /\brsync\b/, 'rsync (e rrsync) para a cópia externa dos backups');
+  assert.match(pacotes, /\bcronie\b/, 'cron para o backup semanal');
   assert.ok(indice(chamadas, 'docker-ce') >= 0, 'instala o Docker CE');
   assert.ok(indice(chamadas, 'docker-compose-plugin') >= 0, 'instala o Compose');
   assert.ok(indice(chamadas, 'systemctl enable --now docker') >= 0);
