@@ -1,13 +1,17 @@
 // Comandos do banco: npm run db:migrate | db:status | db:admin -w backend (na imagem de
-// PROD: node dist/database/cli.js migrate|status|admin). Lê DB_ARQUIVO do ambiente ou do
+// PROD: node dist/database/cli.js migrate|status|admin|backup|verificar). Lê DB_ARQUIVO do ambiente ou do
 // backend/.env (padrão: data/monitor.db).
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { DB_ARQUIVO_PADRAO } from '../config/configuracao';
 import { criarAdmin } from './admin';
+import { fazerBackup, verificarBackup } from './backup';
 import { abrirConexao } from './conexao';
 import { aplicarMigracoes, PASTA_MIGRACOES, statusMigracoes } from './migracoes';
+
+const USO_BACKUP = 'Uso: cli.js backup <arquivo de destino>';
+const USO_VERIFICAR = 'Uso: cli.js verificar <arquivo de backup>';
 
 const USO_ADMIN =
   'Uso: npm run db:admin -w backend -- --email <e-mail> --nome <nome> (a senha é pedida em seguida)';
@@ -43,6 +47,19 @@ const comandos = {
     const senha = await lerSenha();
     const { id, email } = await criarAdmin(db, { email: values.email, nome: values.nome, senha });
     saida(`Admin criado: ${email} (id ${id})`);
+  },
+
+  // Backup consistente com a API no ar (tarefa 028); usado pelo infra/scripts/backup.sh.
+  async backup({ db, saida, args = [] }) {
+    if (!args[0]) throw new Error(USO_BACKUP);
+    const { destino, integridade } = await fazerBackup(db, args[0]);
+    saida(`Backup gravado: ${destino} (integridade: ${integridade})`);
+  },
+
+  verificar({ saida, args = [] }) {
+    if (!args[0]) throw new Error(USO_VERIFICAR);
+    const { ativos, usuarios } = verificarBackup(args[0]);
+    saida(`${args[0]}: integridade ok, ${ativos} ativo(s), ${usuarios} usuário(s)`);
   },
 };
 

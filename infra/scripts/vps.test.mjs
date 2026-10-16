@@ -96,7 +96,8 @@ test('preparar-vps: Docker, usuário deploy e firewall com a porta do SSH antes 
   assert.match(pacotes, /\brsync\b/, 'rsync (e rrsync) para a cópia externa dos backups');
   assert.match(pacotes, /\bcronie\b/, 'cron para o backup semanal');
   assert.ok(
-    indice(chamadas, 'install -m 755 /usr/share/doc/rsync/support/rrsync /usr/local/bin/rrsync') >= 0,
+    indice(chamadas, 'install -m 755 /usr/share/doc/rsync/support/rrsync /usr/local/bin/rrsync') >=
+      0,
     'rrsync no PATH (o pacote só o traz como documentação)',
   );
   assert.ok(indice(chamadas, 'docker-ce') >= 0, 'instala o Docker CE');
