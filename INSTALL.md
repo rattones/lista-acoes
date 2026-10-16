@@ -237,7 +237,7 @@ O `certificado-inicial.sh`:
 2. Emite **um** certificado com os quatro nomes, usando o certbot em modo `--standalone` na porta 80 (desafio HTTP-01).
 3. Sobe a stack.
 
-Ele não sobrescreve um certificado da Let's Encrypt já emitido.
+Ele não sobrescreve um certificado da Let's Encrypt de produção já emitido. Na emissão real depois do ensaio, o certificado de staging é apagado antes (com os mesmos domínios, o certbot o manteria), e o script falha se, no fim, o certificado ainda for de testes.
 
 ### Renovação do certificado
 
