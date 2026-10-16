@@ -186,7 +186,8 @@ VPS: AlmaLinux 9, SSH na porta **22022**. Os scripts ficam em `infra/scripts/` e
    git clone https://github.com/rattones/lista-acoes.git && cd lista-acoes
    cp infra/.env-example infra/.env              # LETSENCRYPT_EMAIL; revise o resto
    cp backend/.env-example backend/.env          # SMTP_USER, SMTP_PASS e MAIL_FROM (obrigatórios em produção)
-   echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # só de PROD, nunca reaproveitado
+   # Segredo só de PROD, nunca reaproveitado (substitui a linha vazia do exemplo; | como separador, já que o base64 pode ter /)
+   sed -i "s|^JWT_SEGREDO=.*|JWT_SEGREDO=$(openssl rand -base64 48 | tr -d '\n')|" backend/.env
    chmod 600 infra/.env backend/.env
    ```
 
