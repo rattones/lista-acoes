@@ -46,6 +46,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: tela de API keys dos agentes (`/api-keys`, só admin) com nome, prefixo, escopos, criação, último uso e status; diálogo "Nova chave" (nome + escopos) que mostra a chave completa uma única vez, com botão copiar, e a descarta ao fechar; revogação com confirmação (tarefa 023).
 - App: tela Meu perfil (`/perfil`) com nome editável, e-mail só leitura, troca de senha (a sessão nova da API é adotada sem sair) e exclusão permanente da própria conta, confirmada pela senha e pela palavra `EXCLUIR`; depois, a sessão local é descartada e o app leva à landing. Mensagem própria para o último admin (tarefa 022).
 - Variável `VITE_LANDING_URL` (padrão `https://www.listadecompras.net`; DEV `http://casaratton.ddns.net:8081`), endereço da landing usado depois da exclusão da conta (tarefa 022).
 - App: lista de ativos (`/ativos`) com código, nome, tipo, bolsa, status e última cotação, filtros por tipo e status, busca, switch de status com reversão em caso de erro e restauração dos excluídos (admin) (tarefa 021).
@@ -137,3 +138,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 - Versão do Node fixada em 24 (`.nvmrc` e `engines`) (tarefa 001).
 - `.env-example` na raiz, no backend e no frontend (tarefa 001).
 - Teste de verificação da estrutura do repositório em `infra/scripts/estrutura.test.mjs` (tarefa 001).
+
+### Removido
+
+- App: tela provisória "em breve" (`EmBreveView`), sem uso depois da tela de API keys (tarefa 023).
