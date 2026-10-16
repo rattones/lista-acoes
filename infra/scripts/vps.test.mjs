@@ -61,8 +61,10 @@ test('scripts da VPS são executáveis e têm sintaxe válida', () => {
 
 const SISTEMA = {
   dnf: null,
-  systemctl: null,
+  // FIREWALLD_INATIVO=1 simula o firewalld desligado (como na VPS em 2026-10-16).
+  systemctl: '[ "$1" = is-active ] && [ -n "${FIREWALLD_INATIVO:-}" ] && exit 3; exit 0',
   'firewall-cmd': null,
+  'firewall-offline-cmd': null,
   useradd: null,
   usermod: null,
   install: null,
@@ -113,6 +115,48 @@ test('preparar-vps não reinstala o Docker quando o Compose já existe', () => {
   assert.equal(status, 0);
   assert.equal(indice(chamadas, 'docker-ce'), -1);
   assert.ok(indice(chamadas, 'systemctl enable --now docker') >= 0);
+});
+
+test('firewalld desligado: configura offline antes de ligar, sem janela sem SSH', () => {
+  falsos({ ...SISTEMA, id: 'echo 0' });
+  const { status, chamadas, saida } = rodar('preparar-vps.sh', [], {
+    SSH_PORTA: '22022',
+    FIREWALLD_INATIVO: '1',
+  });
+  assert.equal(status, 0, saida);
+  const porta = indice(chamadas, 'firewall-offline-cmd --add-port=22022/tcp');
+  const liga = indice(chamadas, 'systemctl enable --now firewalld');
+  assert.ok(porta >= 0, 'libera a porta do SSH offline');
+  assert.ok(indice(chamadas, 'firewall-offline-cmd --add-service=http') >= 0);
+  assert.ok(indice(chamadas, 'firewall-offline-cmd --add-service=https') >= 0);
+  assert.ok(liga > porta, 'só liga o firewalld depois de liberar o SSH');
+  const removeSsh = indice(chamadas, '--remove-service=ssh');
+  assert.ok(removeSsh > porta && removeSsh < liga, 'fecha a 22 offline, depois de abrir a 22022');
+  assert.equal(
+    indice(chamadas, 'firewall-cmd --permanent'),
+    -1,
+    'sem firewall-cmd com o daemon parado',
+  );
+  const cockpit = indice(chamadas, 'firewall-offline-cmd --remove-service=cockpit');
+  assert.ok(cockpit >= 0 && cockpit < liga, 'fecha o cockpit (9090) antes de ligar');
+  // Ligar o firewalld apaga as regras de rede do Docker: o Docker é reiniciado depois.
+  assert.ok(indice(chamadas, 'systemctl restart docker') > liga, 'reinicia o Docker depois');
+});
+
+test('firewalld ligado: firewall-cmd permanente e Docker sem reinício', () => {
+  falsos({ ...SISTEMA, id: 'echo 0' });
+  const { status, chamadas } = rodar('preparar-vps.sh', [], {});
+  assert.equal(status, 0);
+  assert.equal(indice(chamadas, 'firewall-offline-cmd'), -1);
+  assert.equal(indice(chamadas, 'systemctl restart docker'), -1);
+  const cockpit = indice(chamadas, 'firewall-cmd --permanent --remove-service=cockpit');
+  const recarga = indice(chamadas, 'firewall-cmd --reload');
+  assert.ok(cockpit >= 0 && cockpit < recarga, 'fecha o cockpit (9090) antes de recarregar');
+  assert.ok(
+    indice(chamadas, 'firewall-cmd --permanent --add-port') <
+      indice(chamadas, 'systemctl enable --now docker'),
+    'firewall antes do Docker',
+  );
 });
 
 test('preparar-vps é idempotente: usuário deploy existente não é recriado', () => {
