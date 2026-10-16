@@ -137,6 +137,8 @@ test('firewalld desligado: configura offline antes de ligar, sem janela sem SSH'
     -1,
     'sem firewall-cmd com o daemon parado',
   );
+  const cockpit = indice(chamadas, 'firewall-offline-cmd --remove-service=cockpit');
+  assert.ok(cockpit >= 0 && cockpit < liga, 'fecha o cockpit (9090) antes de ligar');
   // Ligar o firewalld apaga as regras de rede do Docker: o Docker é reiniciado depois.
   assert.ok(indice(chamadas, 'systemctl restart docker') > liga, 'reinicia o Docker depois');
 });
@@ -147,6 +149,9 @@ test('firewalld ligado: firewall-cmd permanente e Docker sem reinício', () => {
   assert.equal(status, 0);
   assert.equal(indice(chamadas, 'firewall-offline-cmd'), -1);
   assert.equal(indice(chamadas, 'systemctl restart docker'), -1);
+  const cockpit = indice(chamadas, 'firewall-cmd --permanent --remove-service=cockpit');
+  const recarga = indice(chamadas, 'firewall-cmd --reload');
+  assert.ok(cockpit >= 0 && cockpit < recarga, 'fecha o cockpit (9090) antes de recarregar');
   assert.ok(
     indice(chamadas, 'firewall-cmd --permanent --add-port') <
       indice(chamadas, 'systemctl enable --now docker'),
