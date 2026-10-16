@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { mdiKeyPlus, mdiKeyRemove } from '@mdi/js';
 import NovaChaveDialog from '../components/NovaChaveDialog.vue';
 import { api } from '../api/cliente.js';
@@ -8,11 +8,24 @@ import { formatarDataHora } from '../utils/formatos.js';
 
 // API keys dos agentes (tarefa 023): só admin. A chave completa só aparece no diálogo de
 // criação; a lista mostra o prefixo. Sem edição: para mudar, cria-se outra e revoga-se esta.
+// Revogadas ficam ocultas até ligar "Mostrar revogadas" (tarefa 031): filtro no app, sobre a
+// lista já carregada, e a preferência não é guardada.
 const chaves = ref([]);
 const escopos = ref([]);
 const carregando = ref(false);
 const erro = ref('');
 const criando = ref(false);
+
+const mostrarRevogadas = ref(false);
+const revogadas = computed(() => chaves.value.filter((c) => c.revogado_em).length);
+const visiveis = computed(() =>
+  mostrarRevogadas.value ? chaves.value : chaves.value.filter((c) => !c.revogado_em),
+);
+const mensagemVazia = computed(() =>
+  revogadas.value && !mostrarRevogadas.value
+    ? `Nenhuma API key ativa. Ligue "Mostrar revogadas" para ver as ${revogadas.value} revogadas.`
+    : 'Nenhuma API key.',
+);
 
 const revogando = ref(null);
 const enviando = ref(false);
@@ -62,6 +75,15 @@ onMounted(carregar);
     <div class="d-flex flex-wrap align-center ga-4 mb-4">
       <h1 class="text-h5">API keys dos agentes</h1>
       <v-spacer />
+      <v-switch
+        v-model="mostrarRevogadas"
+        data-teste="mostrar-revogadas"
+        :label="`Mostrar revogadas (${revogadas})`"
+        :disabled="!revogadas"
+        color="primary"
+        density="compact"
+        hide-details
+      />
       <v-btn
         data-teste="nova-chave"
         color="primary"
@@ -91,7 +113,7 @@ onMounted(carregar);
         </tr>
       </thead>
       <tbody>
-        <tr v-for="chave in chaves" :key="chave.id" :data-teste="`chave-${chave.id}`">
+        <tr v-for="chave in visiveis" :key="chave.id" :data-teste="`chave-${chave.id}`">
           <td>
             <div>{{ chave.nome }}</div>
             <code class="text-caption text-medium-emphasis">la_{{ chave.prefixo }}_…</code>
@@ -130,8 +152,10 @@ onMounted(carregar);
             />
           </td>
         </tr>
-        <tr v-if="!carregando && !chaves.length">
-          <td colspan="6" class="text-center text-medium-emphasis">Nenhuma API key.</td>
+        <tr v-if="!carregando && !visiveis.length">
+          <td colspan="6" data-teste="lista-vazia" class="text-center text-medium-emphasis">
+            {{ mensagemVazia }}
+          </td>
         </tr>
       </tbody>
     </v-table>
