@@ -55,6 +55,8 @@ npm run db:admin -w backend -- --email admin@exemplo.com --nome "Nome do Admin"
 
 A senha (mínimo de 10 caracteres) é pedida duas vezes, sem aparecer na tela. Sem terminal (ex.: script), ela é lida da primeira linha da entrada: `echo "$SENHA" | npm run db:admin -w backend -- ...`. Nunca passe a senha como argumento: ela ficaria no histórico do shell.
 
+**Dados fictícios (DEV):** enquanto os agentes coletores não existem, `npm run db:seed-dev -w backend` popula o banco para o dashboard: para cada ativo com `status = 'ativo'`, cerca de 15 meses de preços (dias úteis; cripto e stablecoin todos os dias), uma execução por dia útil nos últimos 90 dias com um sinal por ativo (indicadores calculados dos preços: retornos, MM20/50/200, IFR14, MACD, %B, máximas e mínimas de 52 semanas) e notícias por ativo e gerais. Os dados são sempre os mesmos (semente fixa por ativo) e ficam marcados: `fonte = 'seed'` em preços e notícias (URLs em `exemplo.invalid`) e `fonte_lista = 'seed'` nas execuções. Rodar de novo apaga e recria só eles; `-- --limpar` só apaga. Dados reais (outra fonte) não são tocados, e um dia com preço ou execução real fica com o real. Recusa com `NODE_ENV=production`. No container do DEV, depois de atualizar a imagem (`up --build`), ou direto: `docker compose -f infra/docker-compose.dev.yml exec backend node -r @babel/register src/database/cli.js seed-dev`.
+
 Nova migration: crie `backend/migrations/NNNN_descricao.sql` com o próximo número (4 dígitos). Cada arquivo roda em uma transação, então não use `BEGIN`/`COMMIT` nele, nem `PRAGMA foreign_keys` (não tem efeito dentro de transação). Migration aplicada não deve ser editada: corrija com uma nova.
 
 ## E-mail (Gmail SMTP)

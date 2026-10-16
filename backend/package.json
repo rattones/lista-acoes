@@ -11,7 +11,8 @@
     "db:migrate": "node -r @babel/register src/database/cli.js migrate",
     "db:status": "node -r @babel/register src/database/cli.js status",
     "db:admin": "node -r @babel/register src/database/cli.js admin",
-    "email:teste": "node -r @babel/register src/mail/enviar-teste.js"
+    "email:teste": "node -r @babel/register src/mail/enviar-teste.js",
+    "db:seed-dev": "node -r @babel/register src/database/cli.js seed-dev"
   },
   "jest": {
     "testEnvironment": "node",

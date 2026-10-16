@@ -79,6 +79,7 @@ echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env   # uma vez: segre
 docker compose -f infra/docker-compose.dev.yml up -d --build
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w backend -- --email <e-mail> --nome <nome>
+docker compose -f infra/docker-compose.dev.yml exec backend npm run db:seed-dev -w backend   # dados fictícios (dashboard)
 npm run smoke:dev
 ```
 
