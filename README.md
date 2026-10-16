@@ -299,7 +299,8 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Mensagens:** credenciais inválidas, conta bloqueada com o tempo restante (`detalhes.segundos_restantes` do 423), excesso de tentativas (429), sem conexão, e link de redefinição expirado ou já usado, com o link para pedir outro.
 - **Testes:** `frontend/test/utils.js` tem a API falsa (`criarApiFalsa`, `apiComSessao`) instalada como `fetch` global e `montarApp(rota)`, que monta o app inteiro (Vuetify, router em memória e Pinia).
 - **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
-- **Landing page:** o link "Acessar o app" usa `VITE_APP_URL` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro: usuários entram por convite.
+- **Landing page:** página estática, sem JavaScript, com o que é o projeto, como funciona (coleta → análise → nota → decisão), o aviso de acesso por convite e os links "Entrar" e "Acessar o app", que levam a `VITE_APP_URL/login` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro. Tem metatags de SEO e Open Graph (endereço canônico por `VITE_LANDING_URL`), favicon, `robots.txt`, tema claro e escuro, e nota 100 no Lighthouse (performance, acessibilidade, boas práticas e SEO).
+- **Política de privacidade** (`/privacidade.html`): gerada no build a partir do `POLICY.md` da raiz por um plugin do Vite (`frontend/landing/politica.js`, com `marked`), então nunca diverge do documento. No DEV, editar o `POLICY.md` recarrega a página. Um teste impede que ela cite tarefas internas ou leve a arquivos `.md`.
 
 ## Produção (Docker + Nginx)
 

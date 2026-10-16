@@ -45,6 +45,13 @@ test('landing: :8081 responde 200', async () => {
   assert.match(res.corpo, /Lista de Ações/);
 });
 
+// Gerada do POLICY.md montado no container (tarefa 026).
+test('landing: :8081/privacidade.html traz a política de privacidade', async () => {
+  const res = await get(8081, '/privacidade.html');
+  assert.equal(res.status, 200);
+  assert.match(res.corpo, /LGPD/);
+});
+
 test('app: :8080/v1/health chega à API pelo proxy do Vite', async () => {
   const res = await get(8080, '/v1/health');
   assert.equal(res.status, 200);

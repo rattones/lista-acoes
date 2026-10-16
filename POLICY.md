@@ -4,7 +4,7 @@ Esta política explica quais dados pessoais o **Lista de Ações** coleta, por q
 
 O Lista de Ações é um sistema privado de acompanhamento de ações, de acesso **só por convite**: não há cadastro aberto ao público. Ele é composto pelo app (`app.listadecompras.net`), pela API (`api.listadecompras.net`) e pela landing page (`www.listadecompras.net`).
 
-> Versão inicial (tarefa 008). Login, convites, e-mails e exclusão de conta ainda estão em desenvolvimento. Esta política descreve como eles vão funcionar e será revisada sempre que uma tarefa mudar o tratamento de dados.
+> Atualizada em 16/10/2026. Esta política é revisada sempre que o sistema mudar a forma de tratar dados pessoais. Ela também está publicada na landing page, em `www.listadecompras.net/privacidade.html`.
 
 ## Dados coletados
 
@@ -56,7 +56,7 @@ Os e-mails são enviados pelo **Gmail** (SMTP do Google), que recebe o endereço
 
 ## Armazenamento e segurança
 
-- Os dados ficam em um banco SQLite no servidor de produção (VPS), em volume de disco persistente. A cópia de segurança semanal, com cópia externa, está em implantação (tarefa 028).
+- Os dados ficam em um banco SQLite no servidor de produção (VPS), em volume de disco persistente. A cópia de segurança semanal, com cópia externa, está em implantação.
 - Todo acesso ao app e à API é feito por HTTPS (certificado da Let's Encrypt, com HSTS).
 - Credenciais do sistema (senhas de serviço, chaves) ficam em arquivos de configuração fora do repositório de código.
 - As chaves de acesso dos agentes são guardadas como hash e exibidas uma única vez, na criação.
@@ -90,4 +90,4 @@ Para exercer esses direitos ou tirar dúvidas, fale com o administrador que envi
 
 ## Alterações
 
-Esta política é atualizada junto com o sistema. Mudanças relevantes são registradas no [CHANGELOG.md](CHANGELOG.md).
+Esta política é atualizada junto com o sistema, e a data da última atualização aparece no início dela. Mudanças relevantes também são registradas no histórico de alterações do projeto (CHANGELOG).
