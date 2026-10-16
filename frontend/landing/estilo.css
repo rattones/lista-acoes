@@ -1,5 +1,7 @@
 :root {
   --fundo: #f5f7fa;
+  --superficie: #ffffff;
+  --borda: #d9e2ec;
   --texto: #1f2933;
   --suave: #52606d;
   --primaria: #1565c0;
@@ -10,6 +12,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --fundo: #121417;
+    --superficie: #1b1f24;
+    --borda: #323a44;
     --texto: #e4e7eb;
     --suave: #9aa5b1;
     --primaria: #64b5f6;
@@ -24,32 +28,94 @@
 body {
   margin: 0;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
   background: var(--fundo);
   color: var(--texto);
   font-family: system-ui, sans-serif;
   line-height: 1.6;
 }
 
+a {
+  color: var(--primaria);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--primaria);
+  outline-offset: 2px;
+}
+
+.topo,
+main,
+.rodape {
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+
+.marca {
+  color: var(--texto);
+  font-weight: 700;
+  font-size: 1.125rem;
+  text-decoration: none;
+}
+
 main {
-  max-width: 40rem;
+  flex: 1;
+}
+
+section {
+  padding-block: 2rem;
+}
+
+.destaque {
+  padding-block: 3rem 2rem;
 }
 
 h1 {
   margin: 0 0 1rem;
   font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
 }
 
 p {
+  margin: 0 0 1rem;
   color: var(--suave);
+}
+
+.lead {
+  max-width: 40rem;
+  font-size: 1.125rem;
+}
+
+.aviso {
+  font-weight: 600;
+  color: var(--texto);
 }
 
 .botao {
   display: inline-block;
-  margin-top: 1rem;
   padding: 0.75rem 1.5rem;
+  border: 2px solid var(--primaria);
   border-radius: 8px;
   background: var(--primaria);
   color: var(--primaria-texto);
@@ -60,4 +126,124 @@ p {
 .botao:hover,
 .botao:focus-visible {
   filter: brightness(1.1);
+}
+
+.botao--contorno {
+  padding: 0.375rem 1rem;
+  background: transparent;
+  color: var(--primaria);
+}
+
+.passos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+
+.passos li {
+  counter-increment: passo;
+  padding: 1.25rem;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.passos li::before {
+  content: counter(passo);
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--primaria);
+  color: var(--primaria-texto);
+  font-weight: 700;
+}
+
+.passos p {
+  margin: 0;
+}
+
+.acesso {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.rodape {
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--borda);
+  font-size: 0.9375rem;
+}
+
+/* Política de privacidade (conteúdo gerado do POLICY.md) */
+.documento {
+  padding-block: 2rem;
+}
+
+.documento h2 {
+  margin-top: 2.5rem;
+}
+
+.documento h3 {
+  margin-top: 1.5rem;
+}
+
+.documento ul {
+  color: var(--suave);
+}
+
+.documento li + li {
+  margin-top: 0.375rem;
+}
+
+.documento strong {
+  color: var(--texto);
+}
+
+.documento blockquote {
+  margin: 0 0 1rem;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--primaria);
+  background: var(--superficie);
+}
+
+.documento blockquote p {
+  margin: 0;
+}
+
+.documento code {
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.tabela {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.tabela table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.tabela th,
+.tabela td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--borda);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabela td {
+  color: var(--suave);
 }

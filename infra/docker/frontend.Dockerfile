@@ -10,6 +10,8 @@ COPY backend/package.json backend/
 COPY frontend/package.json frontend/
 RUN npm ci -w frontend
 COPY frontend/ frontend/
+# A política de privacidade da landing é gerada do POLICY.md da raiz (tarefa 026).
+COPY POLICY.md ./
 
 ARG VITE_API_URL=https://api.listadecompras.net
 ARG VITE_APP_URL=https://app.listadecompras.net

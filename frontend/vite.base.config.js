@@ -10,7 +10,8 @@ const hostsPermitidos = (process.env.HOSTS_PERMITIDOS ?? '')
 // Cada ponto de entrada (app e landing) tem sua raiz e gera um build próprio
 // em dist/<alvo>, com seus próprios assets: os dois são servidos por hosts
 // diferentes (app. e www.), cada um com sua pasta.
-export function configBase(alvo, { porta, plugins = [], proxy }) {
+// entradas: páginas HTML do build (padrão: só o index.html da raiz do alvo).
+export function configBase(alvo, { porta, plugins = [], proxy, entradas }) {
   const servidor = { host: true, port: porta, allowedHosts: hostsPermitidos };
   return {
     root: join(import.meta.dirname, alvo),
@@ -22,6 +23,7 @@ export function configBase(alvo, { porta, plugins = [], proxy }) {
     build: {
       outDir: join(import.meta.dirname, 'dist', alvo),
       emptyOutDir: true,
+      ...(entradas && { rolldownOptions: { input: entradas } }),
     },
   };
 }

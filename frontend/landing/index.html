@@ -3,23 +3,101 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lista de Ações — acompanhamento de ações com notas diárias</title>
     <meta
       name="description"
-      content="Acompanhe o mercado de ações e receba apoio para decidir compras e vendas."
+      content="Acompanhe ações, ETFs e moedas em um só lugar: preços e notícias coletados todos os dias e uma nota de 1 a 5 para apoiar suas decisões de compra e venda."
     />
-    <title>Lista de Ações</title>
+    <link rel="canonical" href="%VITE_LANDING_URL%/" />
+    <meta name="theme-color" content="#1565c0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lista de Ações" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="%VITE_LANDING_URL%/" />
+    <meta
+      property="og:title"
+      content="Lista de Ações — acompanhamento de ações com notas diárias"
+    />
+    <meta
+      property="og:description"
+      content="Preços e notícias coletados todos os dias e uma nota de 1 a 5 por ativo para apoiar suas decisões de compra e venda."
+    />
+    <meta name="twitter:card" content="summary" />
+
     <link rel="stylesheet" href="./estilo.css" />
   </head>
   <body>
+    <header class="topo">
+      <a class="marca" href="/">Lista de Ações</a>
+      <a class="botao botao--contorno" href="%VITE_APP_URL%/login">Entrar</a>
+    </header>
+
     <main>
-      <h1>Lista de Ações</h1>
-      <p>
-        Acompanhe os ativos que você monitora em um só lugar. Agentes coletam diariamente preços e
-        notícias, e cada ativo recebe uma nota que resume o momento do mercado para apoiar suas
-        decisões de compra e venda.
-      </p>
-      <p>O acesso é feito por convite.</p>
-      <a class="botao" href="%VITE_APP_URL%">Acessar o app</a>
+      <section class="destaque">
+        <h1>Lista de Ações</h1>
+        <p class="lead">
+          Acompanhe as ações, ETFs e moedas que você monitora em um só lugar, com preços e notícias
+          coletados todos os dias e uma nota que resume o momento de cada ativo.
+        </p>
+        <p class="aviso">O acesso é feito por convite.</p>
+        <a class="botao" href="%VITE_APP_URL%/login">Acessar o app</a>
+      </section>
+
+      <section id="o-que-e" aria-labelledby="titulo-o-que-e">
+        <h2 id="titulo-o-que-e">O que é</h2>
+        <p>
+          Um sistema para acompanhar o mercado e apoiar decisões de compra e venda. Você cadastra os
+          ativos pelo link do Google Finance ou do Yahoo Finance, e o sistema passa a observá-los:
+          cotações, indicadores técnicos e notícias, reunidos num painel com gráficos e filtros.
+        </p>
+      </section>
+
+      <section id="como-funciona" aria-labelledby="titulo-como-funciona">
+        <h2 id="titulo-como-funciona">Como funciona</h2>
+        <ol class="passos">
+          <li>
+            <h3>Coleta</h3>
+            <p>Agentes buscam todos os dias as cotações e as principais notícias de cada ativo.</p>
+          </li>
+          <li>
+            <h3>Análise</h3>
+            <p>
+              Indicadores técnicos (médias móveis, IFR, MACD, bandas de Bollinger) e o tom das
+              notícias são calculados para cada ativo.
+            </p>
+          </li>
+          <li>
+            <h3>Nota</h3>
+            <p>
+              Cada ativo recebe uma nota de 1 a 5, que mostra se gráfico e notícias apontam na mesma
+              direção.
+            </p>
+          </li>
+          <li>
+            <h3>Decisão</h3>
+            <p>
+              Com a nota e o histórico no painel, você decide comprar, manter ou vender. As notas
+              apoiam a decisão; não são recomendação de investimento.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="acesso" aria-labelledby="titulo-acesso">
+        <h2 id="titulo-acesso">Acesso por convite</h2>
+        <p>
+          Não há cadastro aberto. Cada pessoa recebe por e-mail um link exclusivo para criar a sua
+          conta. Já tem conta? Entre no app.
+        </p>
+        <a class="botao" href="%VITE_APP_URL%/login">Acessar o app</a>
+      </section>
     </main>
+
+    <footer class="rodape">
+      <a href="/privacidade.html">Política de privacidade</a>
+    </footer>
   </body>
 </html>

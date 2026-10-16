@@ -14,6 +14,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- POLICY: sem referências a tarefas internas nem link para arquivo do repositório (agora também é publicada na landing), e a nota de "versão inicial" dá lugar à data da última atualização (tarefa 026).
+- Docker: a imagem do frontend copia o `POLICY.md` e o compose de DEV o monta no container; o DEV precisa de `up --build` por causa do `marked` (tarefa 026).
 - Especificação do dashboard (tarefa 024): gráfico de preço (linha) e nota (barras) do ativo em foco, cards do resumo atual, tabela de indicadores, últimas notícias e filtros rápidos e avançados guardados na URL. Implementação na tarefa 025, com dados fictícios no DEV (tarefa 032); README e tela inicial passam a citar a 025.
 - App: leitura do token dos links de e-mail (`#t=`, `#c=`, com `?` aceito) e formatos de data, papel e status compartilhados em `app/src/utils/` (tarefa 020).
 - Testes do frontend: o app é desmontado depois de cada teste (`enableAutoUnmount`) e o setup simula o `visualViewport`, usado pelos diálogos do Vuetify (tarefa 020).
@@ -48,6 +50,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Landing page completa: o que é, como funciona (coleta → análise → nota → decisão), aviso de acesso por convite e links para o login do app (`VITE_APP_URL/login`); metatags de SEO e Open Graph, favicon e `robots.txt`; sem JavaScript (tarefa 026).
+- Landing: página `/privacidade.html` gerada no build a partir do `POLICY.md` (plugin do Vite com `marked`) (tarefa 026).
 - App: tela de API keys dos agentes (`/api-keys`, só admin) com nome, prefixo, escopos, criação, último uso e status; diálogo "Nova chave" (nome + escopos) que mostra a chave completa uma única vez, com botão copiar, e a descarta ao fechar; revogação com confirmação (tarefa 023).
 - App: tela Meu perfil (`/perfil`) com nome editável, e-mail só leitura, troca de senha (a sessão nova da API é adotada sem sair) e exclusão permanente da própria conta, confirmada pela senha e pela palavra `EXCLUIR`; depois, a sessão local é descartada e o app leva à landing. Mensagem própria para o último admin (tarefa 022).
 - Variável `VITE_LANDING_URL` (padrão `https://www.listadecompras.net`; DEV `http://casaratton.ddns.net:8081`), endereço da landing usado depois da exclusão da conta (tarefa 022).

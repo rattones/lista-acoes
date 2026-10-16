@@ -76,6 +76,8 @@ services:
       - ../frontend/vite.base.config.js:/app/frontend/vite.base.config.js:ro
       - ../frontend/vite.app.config.js:/app/frontend/vite.app.config.js:ro
       - ../frontend/vite.landing.config.js:/app/frontend/vite.landing.config.js:ro
+      # A página de privacidade da landing é gerada do POLICY.md (tarefa 026).
+      - ../POLICY.md:/app/POLICY.md:ro
     depends_on:
       - backend
 
