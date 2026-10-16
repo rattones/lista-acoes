@@ -279,7 +279,10 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
   | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito)                   |
   | `/cadastro#c=<token>`        | Pública  | Cadastro por convite: e-mail do convite só confirmado (`?c=` também é aceito) |
   | `/`                          | Logado   | Dashboard (gráfico na tarefa 024)                                             |
-  | `/ativos`, `/perfil`         | Logado   | Em breve (tarefas 021 e 022)                                                  |
+  | `/ativos`                    | Logado   | Lista de ativos (leitor só vê)                                                |
+  | `/ativos/novo`               | Só admin | Inclusão por link do Google Finance ou do Yahoo Finance                       |
+  | `/ativos/:id`                | Logado   | Exibir; admin edita, atualiza da fonte e exclui                               |
+  | `/perfil`                    | Logado   | Em breve (tarefa 022)                                                         |
   | `/usuarios`                  | Só admin | Lista, convites, ativar/desativar, excluir e restaurar                        |
   | `/usuarios/:id`              | Só admin | Editar nome, papel e status (e-mail só leitura)                               |
   | `/api-keys`                  | Só admin | Em breve (tarefa 023)                                                         |
@@ -287,6 +290,7 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
   Sem login, rota privada → `/login?volta=<rota>`; leitor em rota de admin → dashboard. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
 
+- **Ativos:** lista (`v-data-table`) com código, nome, tipo, bolsa, status e a última cotação gravada em `precos_diarios` (uma consulta por ativo, `—` sem cotação), com filtros por tipo e status e busca por código ou nome (sem acento nem caixa). O admin liga e desliga o status pelo switch da linha (`PATCH { status }`, que volta ao valor anterior se a API recusar) e vê e restaura os excluídos. Em "Novo ativo", o admin cola o link da página do ativo (`google.com/finance/quote/...` ou `finance.yahoo.com/quote/...`; outro endereço é recusado sem chamar a API), confere na mesma tela os dados do `pre-visualizar` e a cotação, ajusta o que precisar e inclui. Em `/ativos/:id`, salva só os campos alterados, "Atualizar dados da fonte" refaz a busca e grava os campos do wrapper, e "Excluir" é lógica por padrão ou física com a opção marcada (apaga sinais e cotações do ativo). O leitor vê tudo só para leitura, sem botões de edição.
 - **Usuários** (só admin): lista com papel, status (Ativo, Inativo, Bloqueado pelas tentativas de login, Excluído) e último login; ativar/desativar, editar, excluir (lógica ou, marcando a opção, física, que apaga também o que o usuário criou) e restaurar com "Mostrar excluídos". O admin não se desativa, não se exclui e não muda o próprio papel por essas telas (para isso há o perfil, tarefa 022).
 - **Convites:** "Convidar usuário" envia `{ email, papel }` (papel padrão: leitor) e mostra a confirmação, com o aviso de que o link vale 72 horas e não pode ser cancelado; "Reenviar" gera um link novo sem invalidar o anterior. O convidado abre `/cadastro#c=<token>`: o e-mail do convite aparece desabilitado e o botão só habilita com "Confirmo que este é meu e-mail" marcado. Convite expirado, inválido ou de e-mail já cadastrado mostra o aviso. Sem SMTP configurado (DEV atual), a API responde 503 ao convidar.
 - **Layout:** logado, menu lateral (`v-navigation-drawer`) com nome, e-mail e papel do usuário e os tópicos Dashboard, Ativos, Usuários e API keys (só admin), Meu perfil e Sair. Telas públicas não têm menu.
