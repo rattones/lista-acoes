@@ -69,7 +69,8 @@ const SISTEMA = {
   cp: null,
   chown: null,
   getent: 'exit 1',
-  docker: null,
+  // Sem Docker instalado (o caso com Docker é testado à parte).
+  docker: 'exit 127',
 };
 
 test('preparar-vps recusa rodar sem root, sem executar nada', () => {
@@ -104,6 +105,14 @@ test('preparar-vps: Docker, usuário deploy e firewall com a porta do SSH antes 
   assert.ok(recarga > porta, 'só recarrega depois de liberar o SSH');
   const removeSsh = indice(chamadas, '--remove-service=ssh');
   if (removeSsh >= 0) assert.ok(removeSsh > porta, 'só fecha a 22 depois de abrir a porta do SSH');
+});
+
+test('preparar-vps não reinstala o Docker quando o Compose já existe', () => {
+  falsos({ ...SISTEMA, id: 'echo 0', docker: 'exit 0' });
+  const { status, chamadas } = rodar('preparar-vps.sh', [], {});
+  assert.equal(status, 0);
+  assert.equal(indice(chamadas, 'docker-ce'), -1);
+  assert.ok(indice(chamadas, 'systemctl enable --now docker') >= 0);
 });
 
 test('preparar-vps é idempotente: usuário deploy existente não é recriado', () => {
@@ -168,7 +177,9 @@ test('configurar-ssh --so-chave só desliga a senha depois de testar a chave', (
   const testar = indice(chamadas, 'BatchMode=yes');
   const desligar = indice(chamadas, 'PasswordAuthentication no');
   assert.ok(desligar > testar, JSON.stringify(chamadas));
-  assert.match(chamadas[desligar], /sshd -t/, 'valida a configuração antes de recarregar');
+  // O echo do comando falso quebra a linha nos \n do printf: confere o resto do registro.
+  const comando = chamadas.slice(desligar).join('\n');
+  assert.match(comando, /sshd -t && systemctl reload sshd/, 'valida antes de recarregar');
 });
 
 test('configurar-ssh sem o host mostra o uso', () => {

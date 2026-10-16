@@ -304,7 +304,7 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
 ## Produção (Docker + Nginx)
 
-`docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (portas 80 e 443), a API, o frontend e o certbot. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. Tudo é servido em HTTPS com certificado da Let's Encrypt (renovação automática), e o HTTP redireciona com 301. `npm run smoke:prod` testa a stack e `npm run verifica:https` confere o certificado de PROD. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
+`docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (portas 80 e 443), a API, o frontend e o certbot. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. Tudo é servido em HTTPS com certificado da Let's Encrypt (renovação automática), e o HTTP redireciona com 301. `npm run smoke:prod` testa a stack e `npm run verifica:https` confere o certificado de PROD. Na VPS, `infra/scripts/deploy.sh` faz o deploy de uma nova versão (pull, build, migrations, `up --wait` e verificação de saúde) e volta às imagens anteriores se algo falhar; `npm run smoke:pos-deploy` confere de fora a saúde da API, o app, a landing e o login do admin. `configurar-ssh.sh` e `preparar-vps.sh` preparam o acesso por chave e a VPS. Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
 
 ## Integração contínua
 

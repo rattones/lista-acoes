@@ -23,8 +23,10 @@ case "$*" in
   "image inspect"*) [ -n "\${SEM_IMAGEM:-}" ] && exit 1; exit 0 ;;
   *" build"*) [ -n "\${FALHA_BUILD:-}" ] && exit 1 ;;
   *" run "*migrate*) [ -n "\${FALHA_MIGRATE:-}" ] && exit 1 ;;
-  *" up "*--no-build*) [ -n "\${FALHA_ROLLBACK:-}" ] && exit 1 ;;
-  *" up "*) [ -n "\${FALHA_UP:-}" ] && exit 1 ;;
+  # O primeiro up é o do deploy; os seguintes, o do rollback.
+  *" up "*)
+    if [ -e "$LOG.up" ]; then [ -n "\${FALHA_ROLLBACK:-}" ] && exit 1
+    else touch "$LOG.up"; [ -n "\${FALHA_UP:-}" ] && exit 1; fi ;;
 esac
 exit 0`,
   curl: `[ -n "\${FALHA_SAUDE:-}" ] && exit 22; echo '{"status":"ok"}'; exit 0`,
