@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
@@ -39,6 +39,26 @@ describe('backup do banco', () => {
       restaurado.prepare("SELECT observacao FROM ativos WHERE ativo = 'PETR4'").get().observacao,
     ).toBe('gravado antes do backup');
     restaurado.close();
+  });
+
+  // Na restauração, a cópia é conferida numa pasta montada só para leitura: em WAL, o SQLite
+  // precisaria criar o -shm ao lado e não abriria ("unable to open database file").
+  it('a cópia é um arquivo único (sem WAL) que abre numa pasta só de leitura', async () => {
+    const somenteLeitura = join(pasta, 'somente-leitura');
+    mkdirSync(somenteLeitura);
+    const destino = join(somenteLeitura, 'copia.db');
+    await fazerBackup(db, destino);
+
+    const copia = new Database(destino, { readonly: true });
+    expect(copia.pragma('journal_mode', { simple: true })).toBe('delete');
+    copia.close();
+
+    chmodSync(somenteLeitura, 0o555);
+    try {
+      expect(verificarBackup(destino)).toEqual({ integridade: 'ok', ativos: 6, usuarios: 0 });
+    } finally {
+      chmodSync(somenteLeitura, 0o755);
+    }
   });
 
   it('não sobrescreve um arquivo existente', async () => {
