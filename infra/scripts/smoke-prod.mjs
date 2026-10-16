@@ -115,9 +115,17 @@ for (const subdominio of ['www', null]) {
     assert.equal(res.status, 200);
     assert.match(texto(res), /Lista de Ações/);
     assert.doesNotMatch(texto(res), /id="app"/);
-    assert.match(texto(res), /href="https:\/\/app\.listadecompras\.net"/);
+    assert.match(texto(res), /href="https:\/\/app\.listadecompras\.net\/login"/);
   });
 }
+
+// Gerada no build a partir do POLICY.md (tarefa 026).
+test('www. serve a política de privacidade', async () => {
+  const res = await get('www', '/privacidade.html');
+  assert.equal(res.status, 200);
+  assert.match(texto(res), /<h1>Política de privacidade<\/h1>/);
+  assert.match(texto(res), /LGPD/);
+});
 
 test('host desconhecido não é atendido no HTTP', async () => {
   await assert.rejects(requisitar(false, 'outro.com', '/'), /socket hang up|ECONNRESET/);
