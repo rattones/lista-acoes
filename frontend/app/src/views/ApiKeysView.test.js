@@ -60,6 +60,10 @@ function abrirApi(rotas = {}) {
 }
 
 const linha = (wrapper, id) => wrapper.find(`[data-teste="chave-${id}"]`);
+async function mostrarRevogadas(wrapper, ligar = true) {
+  await wrapper.find('[data-teste="mostrar-revogadas"] input').setValue(ligar);
+  await flushPromises();
+}
 const dialogoNova = () => document.body.querySelector('[data-teste="dialogo-nova-chave"]');
 const dialogoRevogar = () => document.body.querySelector('[data-teste="dialogo-revogar"]');
 
@@ -111,9 +115,58 @@ describe('tela de API keys', () => {
     expect(ativa).toContain('16/10/2026 07:05');
     expect(linha(wrapper, 1).find('[data-teste="status"]').text()).toBe('Ativa');
 
+    // Tarefa 031: as revogadas só aparecem com "Mostrar revogadas" ligado.
+    expect(linha(wrapper, 2).exists()).toBe(false);
+    await mostrarRevogadas(wrapper);
     expect(linha(wrapper, 2).text()).toContain('Nunca');
     expect(linha(wrapper, 2).find('[data-teste="status"]').text()).toBe('Revogada');
     expect(linha(wrapper, 2).find('[data-teste="revogar"]').exists()).toBe(false);
+  });
+
+  describe('mostrar revogadas (tarefa 031)', () => {
+    it('por padrão esconde as revogadas e o rótulo diz quantas estão ocultas', async () => {
+      abrirApi();
+      const { wrapper } = await montarApp('/api-keys');
+      expect(linha(wrapper, 1).exists()).toBe(true);
+      expect(linha(wrapper, 2).exists()).toBe(false);
+      expect(wrapper.find('[data-teste="mostrar-revogadas"]').text()).toContain(
+        'Mostrar revogadas (1)',
+      );
+    });
+
+    it('ligar mostra as revogadas sem chamar a API de novo; desligar esconde', async () => {
+      const falsa = abrirApi();
+      const { wrapper } = await montarApp('/api-keys');
+      const chamadas = falsa.chamou('GET /v1/agentes-tokens').length;
+
+      await mostrarRevogadas(wrapper);
+      expect(linha(wrapper, 2).find('[data-teste="status"]').text()).toBe('Revogada');
+      await mostrarRevogadas(wrapper, false);
+      expect(linha(wrapper, 2).exists()).toBe(false);
+      expect(falsa.chamou('GET /v1/agentes-tokens')).toHaveLength(chamadas);
+    });
+
+    it('sem revogadas, o switch fica desabilitado', async () => {
+      abrirApi({ 'GET /v1/agentes-tokens': lista([COLETOR]) });
+      const { wrapper } = await montarApp('/api-keys');
+      expect(
+        wrapper.find('[data-teste="mostrar-revogadas"] input').attributes('disabled'),
+      ).toBeDefined();
+    });
+
+    it('só revogadas e switch desligado: a lista vazia orienta a ligar o switch', async () => {
+      abrirApi({ 'GET /v1/agentes-tokens': lista([ANTIGA, { ...ANTIGA, id: 4 }]) });
+      const { wrapper } = await montarApp('/api-keys');
+      expect(wrapper.find('[data-teste="lista-vazia"]').text()).toBe(
+        'Nenhuma API key ativa. Ligue "Mostrar revogadas" para ver as 2 revogadas.',
+      );
+    });
+
+    it('sem nenhuma chave, a lista vazia continua simples', async () => {
+      abrirApi({ 'GET /v1/agentes-tokens': lista([]) });
+      const { wrapper } = await montarApp('/api-keys');
+      expect(wrapper.find('[data-teste="lista-vazia"]').text()).toBe('Nenhuma API key.');
+    });
   });
 
   describe('nova chave', () => {
@@ -238,8 +291,27 @@ describe('tela de API keys', () => {
       dialogoRevogar().querySelector('[data-teste="confirmar-revogacao"]').click();
       await flushPromises();
       expect(falsa.chamou('POST /v1/agentes-tokens/1/revogar')).toHaveLength(1);
+      // Com "Mostrar revogadas" desligado (padrão), a chave revogada sai da lista.
+      expect(linha(wrapper, 1).exists()).toBe(false);
+      await mostrarRevogadas(wrapper);
       expect(linha(wrapper, 1).find('[data-teste="status"]').text()).toBe('Revogada');
       expect(linha(wrapper, 1).find('[data-teste="revogar"]').exists()).toBe(false);
+    });
+
+    it('com "Mostrar revogadas" ligado, a linha fica e mostra Revogada', async () => {
+      abrirApi({
+        'POST /v1/agentes-tokens/1/revogar': [
+          200,
+          { ...COLETOR, revogado_em: '2026-10-16 12:00:00' },
+        ],
+      });
+      const { wrapper } = await montarApp('/api-keys');
+      await mostrarRevogadas(wrapper);
+      await linha(wrapper, 1).find('[data-teste="revogar"]').trigger('click');
+      await flushPromises();
+      dialogoRevogar().querySelector('[data-teste="confirmar-revogacao"]').click();
+      await flushPromises();
+      expect(linha(wrapper, 1).find('[data-teste="status"]').text()).toBe('Revogada');
     });
 
     it('cancelar não revoga', async () => {
