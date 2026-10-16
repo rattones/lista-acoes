@@ -56,7 +56,7 @@ Os e-mails são enviados pelo **Gmail** (SMTP do Google), que recebe o endereço
 
 ## Armazenamento e segurança
 
-- Os dados ficam em um banco SQLite no servidor de produção (VPS), em volume de disco persistente. A cópia de segurança semanal, com cópia externa, está em implantação.
+- Os dados ficam em um banco SQLite no servidor de produção (VPS), em volume de disco persistente. Uma cópia de segurança do banco é feita toda semana e guardada por cerca de 2 meses no próprio servidor e por cerca de 6 meses numa cópia externa, num servidor do responsável pelo sistema, acessível só por ele. As cópias têm verificação de integridade.
 - Todo acesso ao app e à API é feito por HTTPS (certificado da Let's Encrypt, com HSTS).
 - Credenciais do sistema (senhas de serviço, chaves) ficam em arquivos de configuração fora do repositório de código.
 - As chaves de acesso dos agentes são guardadas como hash e exibidas uma única vez, na criação.
@@ -74,7 +74,7 @@ Os dados pessoais não são vendidos nem compartilhados. Os únicos terceiros en
 - Se você for o último administrador ativo, a exclusão é recusada até que outro administrador seja definido, para o sistema não ficar sem administração.
 - O e-mail da conta não pode ser alterado; o nome e a senha podem ser alterados na tela de perfil, e a troca de senha encerra as sessões abertas em outros dispositivos.
 - Registros removidos com exclusão lógica (marcados como excluídos, mas recuperáveis) também são apagados quando a conta é excluída.
-- Cópias de segurança anteriores à exclusão podem conter seus dados até serem substituídas pelo ciclo normal de backups.
+- Cópias de segurança anteriores à exclusão podem conter seus dados até serem descartadas pelo ciclo normal de backups: até cerca de 2 meses no servidor e de 6 meses na cópia externa.
 - Os logs de acesso são apagados automaticamente pela rotação (limite de 50 MB por serviço).
 
 ## Seus direitos

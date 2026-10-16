@@ -229,7 +229,7 @@ Na VPS, como `deploy`, na raiz do repositório: `infra/scripts/deploy.sh`. Depoi
 6. `up -d --wait` (espera os healthchecks) e `GET https://api.listadecompras.net/v1/health` (10 tentativas, 6 s entre elas).
 7. Se o passo 6 falhar, **volta às imagens anteriores** e informa o commit anterior, para alinhar o código (`git checkout <commit>`).
 
-As migrations só avançam: o rollback volta o código, não o schema. Por isso as migrations devem ser compatíveis com a versão anterior (acrescentar, não remover nem renomear), e o backup do volume antes de um deploy com migration continua recomendado (backup automático na tarefa 028). No primeiro deploy não há imagens anteriores, e o rollback não acontece.
+As migrations só avançam: o rollback volta o código, não o schema. Por isso as migrations devem ser compatíveis com a versão anterior (acrescentar, não remover nem renomear), e, antes de um deploy com migration, convém rodar o `backup.sh` (além do semanal). No primeiro deploy não há imagens anteriores, e o rollback não acontece.
 
 O `certificado-inicial.sh`:
 
@@ -262,11 +262,52 @@ Se a renovação falhar (o `verifica:https` acusa o vencimento próximo):
 2. Confira se o DNS e a porta 80 continuam apontando para a VPS.
 3. Rode o `renew` acima sem `--dry-run`.
 
+### Backup e restauração
+
+Backup **semanal** do SQLite na VPS e cópia externa **puxada** pelo casa-ratton. Os scripts ficam em `infra/scripts/` e são testados por `npm run test:estrutura`.
+
+- **`backup.sh`** (VPS, cron do `deploy`, domingo 03:00): o CLI do banco grava, dentro do container, uma cópia pela API online do SQLite (consistente com a API no ar e com o WAL) e confere a integridade (`PRAGMA integrity_check`). A cópia vai para `~/backups/monitor-AAAA-MM-DD_HHMM.db.gz`, com um `.sha256`. Ficam as **8** mais recentes (~2 meses); cada execução é registrada em `~/backups/backup.log`.
+- **`puxar-backup.sh`** (casa-ratton, cron, domingo 04:00): traz só `monitor-*.db.gz` e os `.sha256` com a chave `~/.ssh/lista-acoes-backup`, confere os checksums e mantém **26** cópias (~6 meses) em `~/backups/lista-acoes` (log em `puxar.log`). Na VPS, essa chave só lê a pasta de backups (`rrsync -ro`): se a VPS for invadida, a cópia externa não é alcançada.
+
+Configuração (uma vez):
+
+```sh
+# VPS, como deploy: cron do backup
+(crontab -l 2>/dev/null; echo '0 3 * * 0 $HOME/lista-acoes/infra/scripts/backup.sh >> $HOME/backup-cron.log 2>&1') | crontab -
+
+# casa-ratton: chave dedicada, sem senha (o cron não digita)
+ssh-keygen -t ed25519 -N '' -f ~/.ssh/lista-acoes-backup -C lista-acoes-backup
+
+# casa-ratton: autorizar a chave na VPS só para ler ~/backups (rrsync instalado pelo preparar-vps.sh)
+printf 'command="/usr/local/bin/rrsync -ro /home/deploy/backups",restrict %s\n' "$(cat ~/.ssh/lista-acoes-backup.pub)" |
+  ssh -i ~/.ssh/lista-acoes-vps -p 22022 deploy@<ip> 'cat >> ~/.ssh/authorized_keys'
+
+# casa-ratton: cron da cópia externa (caminho do clone do repositório)
+(crontab -l 2>/dev/null; echo '0 4 * * 0 <repo>/infra/scripts/puxar-backup.sh >> $HOME/lista-acoes-backup-cron.log 2>&1') | crontab -
+```
+
+Backup fora de hora: `infra/scripts/backup.sh` na VPS (o nome leva hora e minuto). Antes de um deploy com migration, rode-o.
+
+**Restaurar** (VPS, como deploy):
+
+```sh
+infra/scripts/restaurar-backup.sh ~/backups/monitor-AAAA-MM-DD_HHMM.db.gz         # só confere
+infra/scripts/restaurar-backup.sh ~/backups/monitor-AAAA-MM-DD_HHMM.db.gz --sim   # restaura
+```
+
+1. Confere o `.sha256` e a integridade da cópia (mostra quantos ativos e usuários ela tem) sem tocar no banco. Sem `--sim`, para aqui.
+2. Guarda o banco atual em `data/backups/antes-da-restauracao-<data>.db` (no volume).
+3. Para a API, troca o arquivo (removendo o `-wal` e o `-shm` do banco antigo) com o usuário da imagem e sobe a API, esperando o healthcheck. A API fica fora do ar por alguns segundos; o app e a landing continuam.
+
+Para restaurar uma cópia do casa-ratton, envie-a antes: `scp -i ~/.ssh/lista-acoes-vps -P 22022 <arquivo>.db.gz <arquivo>.db.gz.sha256 deploy@<ip>:backups/`.
+
+Uma restauração volta o banco inteiro ao momento da cópia: o que foi gravado depois (cotações, sinais, contas) se perde, exceto pelo `antes-da-restauracao`.
+
 ### Operação
 
 - **Variáveis:** o Compose lê `infra/.env` sozinho. O `backend/.env` é obrigatório e guarda os segredos da API (`JWT_SEGREDO`); `NODE_ENV`, `PORT`, `CORS_ORIGENS` e `CONFIAR_PROXY` vêm do compose. As `VITE_*` são embutidas no build do frontend, então mudar o valor exige `up --build`.
 - **Imagens:** multi-stage. A API roda em `node:24-slim` com só as dependências de produção, e o frontend em `nginx-unprivileged`; os dois rodam sem root. O proxy usa a imagem oficial `nginx:alpine`: o processo mestre roda como root para ler a chave da Let's Encrypt e abrir as portas 80 e 443, e os workers rodam como `nginx`.
-- **Migrations:** vão dentro da imagem da API. Depois de cada `up --build` com migration nova, aplique com `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js migrate` (`... cli.js status` para conferir). Faça backup do volume antes. Na primeira subida, crie o admin: `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js admin --email <e-mail> --nome <nome>`.
+- **Migrations:** vão dentro da imagem da API. Depois de cada `up --build` com migration nova, aplique com `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js migrate` (`... cli.js status` para conferir). Rode o `infra/scripts/backup.sh` antes. Na primeira subida, crie o admin: `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js admin --email <e-mail> --nome <nome>`.
 - **Logs:** `docker compose -f infra/docker-compose.prod.yml logs <serviço>`. Todos os serviços usam rotação (`json-file`, 5 arquivos de 10 MB, até 50 MB por serviço); os mais antigos são descartados. A API não grava cabeçalhos da requisição, então credenciais não aparecem nos logs.
 - **Volumes:** `lista-acoes_dados` guarda o SQLite e `lista-acoes_letsencrypt`, o certificado e a conta da Let's Encrypt. Os dois sobrevivem a `down` e a rebuilds; **não use `down -v`** em PROD.
 - **Nginx:** `infra/nginx/proxy.conf` (subdomínios, TLS, redirect, gzip, cabeçalhos de segurança e HSTS, CSP, `X-Request-Id` repassado à API) e `infra/nginx/frontend.conf` (fallback da SPA para o `index.html`, cache longo nos assets com hash e `no-cache` no `index.html`). Depois de alterar a config do proxy: `docker compose -f infra/docker-compose.prod.yml exec proxy nginx -t` e depois `... exec proxy nginx -s reload`.

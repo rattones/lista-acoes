@@ -2,7 +2,8 @@
 # Preparação da VPS de PROD (tarefa 027): AlmaLinux 9, como root. Idempotente.
 #   sh preparar-vps.sh        (SSH_PORTA=22022 e USUARIO=deploy por padrão)
 #
-# 1. git e firewalld; Docker CE + Compose, só se o Compose ainda não existir.
+# 1. git, firewalld, rsync (com o rrsync, para a cópia externa dos backups) e cronie;
+#    Docker CE + Compose, só se o Compose ainda não existir.
 # 2. Usuário de deploy (sem senha) no grupo docker, com as chaves autorizadas do root.
 #    Atenção: o grupo docker equivale a root no host; o usuário existe para o deploy não
 #    usar a conta root, não como barreira de segurança.
@@ -23,7 +24,10 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 echo "==> Pacotes"
-dnf -y install git firewalld
+dnf -y install git firewalld rsync cronie
+systemctl enable --now crond
+# O pacote rsync traz o rrsync só como documentação; a chave da cópia externa usa ele.
+install -m 755 /usr/share/doc/rsync/support/rrsync /usr/local/bin/rrsync
 
 if docker compose version > /dev/null 2>&1; then
   echo "Docker e Compose já instalados."
