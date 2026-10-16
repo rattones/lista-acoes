@@ -59,7 +59,11 @@ const comandos = {
   verificar({ saida, args = [] }) {
     if (!args[0]) throw new Error(USO_VERIFICAR);
     const { ativos, usuarios } = verificarBackup(args[0]);
-    saida(`${args[0]}: integridade ok, ${ativos} ativo(s), ${usuarios} usuário(s)`);
+    saida(
+      ativos === null || usuarios === null
+        ? `${args[0]}: integridade ok, sem as tabelas do sistema`
+        : `${args[0]}: integridade ok, ${ativos} ativo(s), ${usuarios} usuário(s)`,
+    );
   },
 };
 

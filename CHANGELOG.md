@@ -6,6 +6,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Corrigido
 
+- Backup do SQLite: o banco atual sem tabelas (vazio, num desastre) fazia o backup falhar (`no such table: ativos`) e bloqueava a restauração, que o guarda antes da troca; agora a contagem vem vazia e o `verificar` informa "sem as tabelas do sistema" (tarefa 028).
 - `puxar-backup.sh`: o `rrsync -ro` da VPS recusava o caminho remoto `./` ("unsafe arg"); agora vai vazio (`deploy@host:`) (tarefa 028).
 - Backup do SQLite: a cópia saía em modo WAL e não abria numa pasta só de leitura (a restauração confere a cópia montada assim: "unable to open database file"); agora é um arquivo único (`journal_mode = DELETE`) (tarefa 028).
 - `certificado-inicial.sh`: a emissão real depois do ensaio mantinha o certificado de staging ("not yet due for renewal") e ainda dizia "Certificado emitido". Agora apaga o de staging antes, confere o resultado e, se a emissão falhar, sobe a stack de novo (tarefa 027).
