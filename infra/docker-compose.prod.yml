@@ -112,6 +112,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-https://api.listadecompras.net}
         VITE_APP_URL: ${VITE_APP_URL:-https://app.listadecompras.net}
+        VITE_LANDING_URL: ${VITE_LANDING_URL:-https://www.listadecompras.net}
     image: lista-acoes-frontend
     restart: unless-stopped
     healthcheck:

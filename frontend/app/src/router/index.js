@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth.js';
 const EmBreve = () => import('../views/EmBreveView.vue');
 
 // meta.publica: sem login (e sem o menu lateral). meta.admin: só papel admin.
-// As telas "em breve" são substituídas nas tarefas 022 a 024.
+// As telas "em breve" são substituídas nas tarefas 023 e 024.
 const rotas = [
   {
     path: '/login',
@@ -72,7 +72,12 @@ const rotas = [
     component: EmBreve,
     meta: { titulo: 'API keys', admin: true },
   },
-  { path: '/perfil', name: 'perfil', component: EmBreve, meta: { titulo: 'Meu perfil' } },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: () => import('../views/PerfilView.vue'),
+    meta: { titulo: 'Meu perfil' },
+  },
   // Rota desconhecida: mostra a 404 mantendo o endereço digitado.
   {
     path: '/:caminho(.*)*',
