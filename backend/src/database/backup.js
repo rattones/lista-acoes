@@ -24,6 +24,15 @@ export async function fazerBackup(db, destino) {
   if (existsSync(destino)) throw new Error(`O destino ${destino} já existe.`);
   mkdirSync(dirname(destino), { recursive: true });
   await db.backup(destino);
+  // A cópia herda o WAL do original. Em WAL, o SQLite não abre o arquivo numa pasta só de
+  // leitura (precisa criar o -shm ao lado), como na restauração: vira um arquivo único.
+  // Ao abrir o banco restaurado, a API (abrirConexao) liga o WAL de novo.
+  const copia = new Database(destino);
+  try {
+    copia.pragma('journal_mode = DELETE');
+  } finally {
+    copia.close();
+  }
   const { integridade } = verificarBackup(destino);
   return { destino, integridade };
 }

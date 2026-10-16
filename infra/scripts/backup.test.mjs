@@ -177,7 +177,8 @@ test('puxar-backup.sh: traz só os backups pela chave dedicada e confere os chec
   assert.match(rsync, /BatchMode=yes/);
   assert.match(rsync, /--include=monitor-\*\.db\.gz /);
   assert.match(rsync, /--exclude=\*/);
-  assert.match(rsync, /deploy@129\.121\.39\.182:/);
+  // O rrsync recusa ./ e / ("unsafe arg"): o caminho remoto fica vazio.
+  assert.match(rsync, / deploy@129\.121\.39\.182: /);
 
   const destino = join(dir, 'externo');
   assert.ok(sha256ok(destino, 'monitor-2026-10-18_0300.db.gz'));

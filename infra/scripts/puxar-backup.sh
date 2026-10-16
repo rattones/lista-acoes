@@ -23,10 +23,11 @@ registrar() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$DESTINO/puxar.log"
 }
 
-# Com o rrsync na VPS, o caminho remoto é relativo à pasta de backups.
+# Com o rrsync na VPS, o caminho remoto é relativo à pasta de backups e vai vazio
+# ("host:"): o rrsync recusa "./" e "/" ("unsafe arg").
 if ! rsync -a '--include=monitor-*.db.gz' '--include=monitor-*.db.gz.sha256' '--exclude=*' \
   -e "ssh -i $CHAVE -p $PORTA -o BatchMode=yes -o IdentitiesOnly=yes" \
-  "$ORIGEM:./" "$DESTINO/"; then
+  "$ORIGEM:" "$DESTINO/"; then
   registrar "falhou: rsync"
   echo "Falha ao puxar os backups de $ORIGEM." >&2
   exit 1
