@@ -84,7 +84,10 @@ describe('tela de API keys', () => {
       configurable: true,
     });
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete document.execCommand;
+  });
 
   it('leitor não acessa /api-keys (volta ao dashboard)', async () => {
     apiComSessao('leitor');
@@ -137,6 +140,38 @@ describe('tela de API keys', () => {
       // A chave nova entra na lista, sem o segredo.
       expect(linha(wrapper, 3).text()).toContain('Coletor de notícias');
       expect(linha(wrapper, 3).text()).not.toContain(CHAVE);
+    });
+
+    // Tarefa 030: por HTTP (DEV), o navigator.clipboard não existe.
+    it('sem navigator.clipboard (HTTP), copiar ainda funciona', async () => {
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+      document.execCommand = vi.fn((comando) => comando === 'copy');
+      abrirApi({
+        'POST /v1/agentes-tokens': (corpo) => [201, { ...NOVA, ...corpo, chave: CHAVE }],
+      });
+      const { wrapper } = await montarApp('/api-keys');
+      await criarChave(wrapper);
+      dialogoNova().querySelector('[data-teste="copiar-chave"]').click();
+      await flushPromises();
+      expect(document.execCommand).toHaveBeenCalledWith('copy');
+      expect(dialogoNova().textContent).toMatch(/Copiada/);
+      expect(dialogoNova().querySelector('[data-teste="erro-nova-chave"]')).toBeNull();
+    });
+
+    it('sem nenhuma forma de copiar, pede a cópia manual e deixa a chave selecionada', async () => {
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+      document.execCommand = vi.fn(() => false);
+      abrirApi({
+        'POST /v1/agentes-tokens': (corpo) => [201, { ...NOVA, ...corpo, chave: CHAVE }],
+      });
+      const { wrapper } = await montarApp('/api-keys');
+      await criarChave(wrapper);
+      dialogoNova().querySelector('[data-teste="copiar-chave"]').click();
+      await flushPromises();
+      expect(dialogoNova().querySelector('[data-teste="erro-nova-chave"]').textContent).toMatch(
+        /copie manualmente/,
+      );
+      expect(window.getSelection().toString()).toBe(CHAVE);
     });
 
     it('a chave some ao fechar e não volta ao reabrir o diálogo', async () => {
