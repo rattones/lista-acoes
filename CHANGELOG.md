@@ -53,6 +53,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- App: switch "Mostrar revogadas (N)" na tela de API keys; por padrão a lista mostra só as ativas, e a lista vazia orienta a ligar o switch quando só há revogadas (tarefa 031).
 - Backup do SQLite (tarefa 028): comandos `backup` e `verificar` no CLI do banco (API online do SQLite + `integrity_check`); `infra/scripts/backup.sh` (semanal na VPS, gzip + `.sha256`, retenção de 8, log), `puxar-backup.sh` (cópia externa puxada pelo casa-ratton com chave restrita a leitura, `rrsync -ro`, retenção de 26) e `restaurar-backup.sh` (confere, guarda o banco atual, troca e sobe a API).
 - Deploy em PROD (tarefa 027): `infra/scripts/deploy.sh` (pull, marca das imagens em uso como `:anterior`, build, migrations com a imagem nova, `up --wait`, verificação de saúde em HTTPS e rollback para as imagens anteriores), `preparar-vps.sh` (Docker, usuário `deploy`, firewalld só com 22022, 80 e 443, configurado offline antes de ser ligado quando está desligado, e o Docker reiniciado em seguida), `configurar-ssh.sh` (acesso à VPS por chave e, opcionalmente, sem senha) e `npm run smoke:pos-deploy` (saúde, app, landing e login do admin pelo DNS e HTTPS reais).
 - Landing page completa: o que é, como funciona (coleta → análise → nota → decisão), aviso de acesso por convite e links para o login do app (`VITE_APP_URL/login`); metatags de SEO e Open Graph, favicon e `robots.txt`; sem JavaScript (tarefa 026).
