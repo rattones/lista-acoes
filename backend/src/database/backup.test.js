@@ -61,6 +61,19 @@ describe('backup do banco', () => {
     }
   });
 
+  // Na restauração, o banco atual é guardado antes da troca; num desastre ele pode estar
+  // vazio ou sem tabelas, e isso não pode bloquear a restauração.
+  it('faz o backup de um banco vazio (sem tabelas) e o verificar informa a ausência', async () => {
+    const vazio = abrirConexao(join(pasta, 'vazio.db'));
+    const destino = join(pasta, 'copia-do-vazio.db');
+    try {
+      await expect(fazerBackup(vazio, destino)).resolves.toEqual({ destino, integridade: 'ok' });
+      expect(verificarBackup(destino)).toEqual({ integridade: 'ok', ativos: null, usuarios: null });
+    } finally {
+      vazio.close();
+    }
+  });
+
   it('não sobrescreve um arquivo existente', async () => {
     const destino = join(pasta, 'existe.db');
     writeFileSync(destino, 'qualquer coisa');
@@ -97,6 +110,15 @@ describe('backup do banco', () => {
       await fazerBackup(db, destino);
       await executar('verificar', { db, saida, args: [destino] });
       expect(linhas).toEqual([`${destino}: integridade ok, 6 ativo(s), 0 usuário(s)`]);
+    });
+
+    it('verificar de uma cópia sem tabelas diz que não tem o schema', async () => {
+      const vazio = abrirConexao(join(pasta, 'vazio.db'));
+      const destino = join(pasta, 'copia-do-vazio.db');
+      await fazerBackup(vazio, destino);
+      vazio.close();
+      await executar('verificar', { db, saida, args: [destino] });
+      expect(linhas).toEqual([`${destino}: integridade ok, sem as tabelas do sistema`]);
     });
   });
 });
