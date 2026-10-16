@@ -42,13 +42,34 @@ $COMPOSE run --rm --no-deps --entrypoint sh certbot -c "
     rm -rf /etc/letsencrypt/live/$DOMINIO
   fi"
 
+RENOVACAO="/etc/letsencrypt/renewal/$DOMINIO.conf"
+eh_staging() {
+  $COMPOSE run --rm --no-deps --entrypoint sh certbot -c "grep -qs acme-staging $RENOVACAO"
+}
+
+# Emissão real sobre um certificado de staging (o ensaio): com os mesmos domínios, o certbot
+# o manteria ("not yet due for renewal"). Ele é apagado para emitir o de produção.
+if [ -z "$STAGING" ] && eh_staging; then
+  echo "Apagando o certificado de testes (staging) para emitir o de produção."
+  $COMPOSE run --rm --no-deps --entrypoint certbot certbot delete --non-interactive --cert-name "$DOMINIO"
+fi
+
 $COMPOSE stop proxy
 
-$COMPOSE run --rm --no-deps -p 80:80 --entrypoint certbot certbot \
+if ! $COMPOSE run --rm --no-deps -p 80:80 --entrypoint certbot certbot \
   certonly --standalone --non-interactive --agree-tos \
   --email "$LETSENCRYPT_EMAIL" $STAGING \
   --cert-name "$DOMINIO" \
-  -d "$DOMINIO" -d "www.$DOMINIO" -d "app.$DOMINIO" -d "api.$DOMINIO"
+  -d "$DOMINIO" -d "www.$DOMINIO" -d "app.$DOMINIO" -d "api.$DOMINIO"; then
+  echo "A emissão falhou. Subindo a stack de novo; veja: $COMPOSE logs certbot" >&2
+  $COMPOSE up -d --wait || true
+  exit 1
+fi
 
 $COMPOSE up -d --wait
+
+if [ -z "$STAGING" ] && eh_staging; then
+  echo "O certificado ainda é de testes (staging): a emissão real não aconteceu." >&2
+  exit 1
+fi
 echo "Certificado emitido. Verifique com: npm run verifica:https"

@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
     "test": "npm run test:estrutura && npm test --workspaces --if-present",
-    "test:estrutura": "node --test infra/scripts/estrutura.test.mjs infra/scripts/deploy.test.mjs infra/scripts/vps.test.mjs",
+    "test:estrutura": "node --test infra/scripts/estrutura.test.mjs infra/scripts/deploy.test.mjs infra/scripts/vps.test.mjs infra/scripts/certificado.test.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "smoke:dev": "node --test infra/scripts/smoke-dev.mjs",
