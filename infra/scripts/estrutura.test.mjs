@@ -209,3 +209,43 @@ test('agentes.Dockerfile: sem root, só dependências de produção, fuso de Sã
   assert.match(dockerfile, /TZ=America\/Sao_Paulo/);
   assert.match(dockerfile, /COPY .*comum\/src/);
 });
+
+// Destaques da landing (tarefa 034): trecho gerado pelo CLI do banco num volume e incluído por SSI.
+test('frontend.conf: SSI só na landing, com o trecho num local interno', () => {
+  const conf = lerTexto('infra/nginx/frontend.conf');
+  const [app, landing] = conf.split(/^server \{/m).slice(1);
+  assert.doesNotMatch(app, /ssi/);
+  assert.match(landing, /^\s*ssi on;/m);
+  assert.match(landing, /^\s*ssi_silent_errors on;/m);
+  assert.match(
+    landing,
+    /location \/destaques\/ \{[^}]*internal;[^}]*alias \/usr\/share\/nginx\/destaques\/;/s,
+  );
+});
+
+test('docker-compose.prod.yml: volume dos destaques (backend escreve, frontend lê)', () => {
+  const { services, volumes } = configCompose('docker-compose.prod.yml');
+  assert.ok('destaques' in volumes, 'volume destaques');
+  assert.ok(services.backend.volumes.includes('destaques:/app/destaques'));
+  assert.ok(services.frontend.volumes.includes('destaques:/usr/share/nginx/destaques:ro'));
+});
+
+test('docker-compose.dev.yml: destaques no backend e no Vite da landing', () => {
+  const { services, volumes } = configCompose('docker-compose.dev.yml');
+  assert.ok('destaques' in volumes, 'volume destaques');
+  assert.ok(services.backend.volumes.includes('destaques:/app/destaques'));
+  assert.ok(services.frontend.volumes.includes('destaques:/app/destaques:ro'));
+  assert.equal(services.frontend.environment.DESTAQUES_DIR, '/app/destaques');
+});
+
+test('backend.Dockerfile cria a pasta dos destaques com o dono node', () => {
+  assert.match(lerTexto('infra/docker/backend.Dockerfile'), /mkdir -p [^\n]*\/app\/destaques/);
+});
+
+test('destaques.sh gera o trecho com o CLI do banco num container avulso', () => {
+  const script = lerTexto('infra/scripts/destaques.sh');
+  assert.match(
+    script,
+    /run --rm --no-deps backend node dist\/database\/cli\.js destaques \/app\/destaques/,
+  );
+});
