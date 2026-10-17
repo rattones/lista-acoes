@@ -73,8 +73,8 @@ describe('CLI dos agentes', () => {
   });
 });
 
-describe('agentes ainda sem coleta (036 e 037)', () => {
-  it.each(AGENTES.map((a) => [a.nome, a]))(
+describe('agente ainda sem coleta (037)', () => {
+  it.each(AGENTES.filter((a) => a.nome === 'noticias').map((a) => [a.nome, a]))(
     '%s avisa que ainda não coleta',
     async (_nome, agente) => {
       const log = logFalso();

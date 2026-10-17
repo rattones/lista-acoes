@@ -11,17 +11,23 @@ describe('executarRodada', () => {
   it('usa a chave do agente, repassa as opções e registra o resumo', async () => {
     const log = logFalso();
     const criarApi = jest.fn(() => ({ api: true }));
+    const criarHttp = jest.fn(() => ({ http: true }));
     const executar = jest.fn(async () => ({ ativos: 3, gravados: 15, falhas: 0 }));
     const resultado = await executarRodada(
       { nome: 'precos', executar },
-      { config, log, criarApi, opcoes: { ativo: 'PETR4' } },
+      { config, log, criarApi, criarHttp, opcoes: { ativo: 'PETR4' } },
     );
     expect(criarApi).toHaveBeenCalledWith({
       url: 'http://backend:3000',
       chave: CHAVE_PRECOS,
       timeoutMs: 30000,
     });
-    expect(executar).toHaveBeenCalledWith({ api: { api: true }, log }, { ativo: 'PETR4' });
+    // Fontes externas: o User-Agent e o timeout da configuração, sem cache entre rodadas.
+    expect(criarHttp).toHaveBeenCalledWith(config.fontes);
+    expect(executar).toHaveBeenCalledWith(
+      { api: { api: true }, http: { http: true }, log, agora: Date.now },
+      { ativo: 'PETR4' },
+    );
     expect(resultado).toEqual({ ok: true, resumo: { ativos: 3, gravados: 15, falhas: 0 } });
     expect(log.registros).toContainEqual(
       expect.objectContaining({

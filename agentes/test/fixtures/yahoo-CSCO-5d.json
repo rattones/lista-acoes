@@ -1,0 +1,90 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "CSCO",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "firstTradeDate": 635178600,
+          "regularMarketTime": 1792180802,
+          "hasPrePostMarketData": true,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 107.39,
+          "regularMarketChangePercent": -2.239,
+          "fulldayPrice": 107.39,
+          "fulldayChange": -2.822,
+          "fulldayChangePercent": -2.569,
+          "fiftyTwoWeekHigh": 130.37,
+          "fiftyTwoWeekLow": 69.85,
+          "regularMarketDayHigh": 110.0,
+          "regularMarketDayLow": 107.14,
+          "regularMarketVolume": 15858137,
+          "longName": "Cisco Systems, Inc.",
+          "shortName": "Cisco Systems, Inc.",
+          "chartPreviousClose": 118.39,
+          "priceHint": 2,
+          "currentTradingPeriod": {
+            "pre": {
+              "timezone": "EDT",
+              "end": 1792157400,
+              "start": 1792137600,
+              "gmtoffset": -14400
+            },
+            "regular": {
+              "timezone": "EDT",
+              "end": 1792180800,
+              "start": 1792157400,
+              "gmtoffset": -14400
+            },
+            "post": {
+              "timezone": "EDT",
+              "end": 1792195200,
+              "start": 1792180800,
+              "gmtoffset": -14400
+            }
+          },
+          "dataGranularity": "1d",
+          "range": "5d",
+          "validRanges": ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
+        },
+        "timestamp": [1791811800, 1791898200, 1791984600, 1792071000, 1792157400],
+        "indicators": {
+          "quote": [
+            {
+              "high": [
+                118.2699966430664, 115.37000274658203, 116.2300033569336, 112.41000366210938, 110.0
+              ],
+              "low": [
+                114.12999725341797, 112.76000213623047, 113.25, 108.44999694824219,
+                107.13999938964844
+              ],
+              "close": [
+                115.33999633789062, 115.06999969482422, 113.63999938964844, 109.8499984741211,
+                107.38999938964844
+              ],
+              "open": [
+                118.20999908447266, 114.27999877929688, 115.1500015258789, 112.16999816894531,
+                109.95999908447266
+              ],
+              "volume": [14496000, 12319400, 16736800, 20956400, 15881900]
+            }
+          ],
+          "adjclose": [
+            {
+              "adjclose": [
+                115.33999633789062, 115.06999969482422, 113.63999938964844, 109.8499984741211,
+                107.38999938964844
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}

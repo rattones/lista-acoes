@@ -13,6 +13,11 @@ describe('lerConfiguracao', () => {
       nivelLog: 'info',
       timeoutMs: 30000,
       cron: { precos: '30 19 * * *', noticias: '0 12 * * *' },
+      fontes: {
+        userAgent:
+          'Mozilla/5.0 (compatible; lista-acoes-agentes/1.0; +https://www.listadecompras.net)',
+        timeoutMs: 15000,
+      },
     });
   });
 
@@ -24,12 +29,15 @@ describe('lerConfiguracao', () => {
       LOG_LEVEL: 'debug',
       CRON_PRECOS: '0 20 * * 1-5',
       CRON_NOTICIAS: '*/30 * * * *',
+      FONTES_USER_AGENT: 'teste/1.0',
+      FONTES_TIMEOUT_MS: '5000',
     });
     expect(config).toMatchObject({
       apiUrl: 'http://backend:3000',
       fuso: 'UTC',
       nivelLog: 'debug',
       cron: { precos: '0 20 * * 1-5', noticias: '*/30 * * * *' },
+      fontes: { userAgent: 'teste/1.0', timeoutMs: 5000 },
     });
   });
 
