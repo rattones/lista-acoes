@@ -52,6 +52,10 @@ const esquema = Joi.object({
     .valid(...NIVEIS)
     .default('info'),
   API_TIMEOUT_MS: Joi.number().integer().min(1000).default(30000),
+  FONTES_USER_AGENT: Joi.string().default(
+    'Mozilla/5.0 (compatible; lista-acoes-agentes/1.0; +https://www.listadecompras.net)',
+  ),
+  FONTES_TIMEOUT_MS: Joi.number().integer().min(1000).default(15000),
   CRON_PRECOS: Joi.string()
     .default('30 19 * * *')
     .custom(horarioValido)
@@ -78,6 +82,7 @@ function lerConfiguracao(env = process.env) {
     nivelLog: value.LOG_LEVEL,
     timeoutMs: value.API_TIMEOUT_MS,
     cron: { precos: value.CRON_PRECOS, noticias: value.CRON_NOTICIAS },
+    fontes: { userAgent: value.FONTES_USER_AGENT, timeoutMs: value.FONTES_TIMEOUT_MS },
   };
 }
 

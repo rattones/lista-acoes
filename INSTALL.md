@@ -46,7 +46,9 @@ Os agentes (`agentes/.env`) precisam de duas API keys, geradas por um admin no a
 | `API_KEY_PRECOS`   | coletor de preços   | `ativos:read`, `precos:read`, `precos:write` |
 | `API_KEY_NOTICIAS` | coletor de notícias | `ativos:read`, `noticias:write`              |
 
-Cole as chaves no `agentes/.env` (`chmod 600 agentes/.env`) e recrie o serviço: `docker compose -f infra/docker-compose.<dev|prod>.yml up -d agentes`. O log deve mostrar `agentes agendados` com os horários. Sem as chaves (ou com chave fora do formato), o container fica no ar sem coletar e registra o erro, que cita as variáveis, nunca os valores. Para trocar uma chave, gere outra, atualize o `.env`, recrie o serviço e revogue a antiga.
+Cole as chaves no `agentes/.env` (`chmod 600 agentes/.env`) e recrie o serviço: `docker compose -f infra/docker-compose.<dev|prod>.yml up -d agentes`. O log deve mostrar `agentes agendados` com os horários.
+
+Primeira coleta de preços: ativos sem nenhum preço recebem 2 anos de histórico já na primeira rodada (19:30). Para não esperar, rode uma avulsa: `docker compose -f infra/docker-compose.prod.yml run --rm agentes node src/cli.js coletar-precos` (no DEV, `... run --rm agentes npm run coletar-precos -w agentes`). No DEV com os dados fictícios do `db:seed-dev`, limpe-os antes (`... exec backend npm run db:seed-dev -w backend -- --limpar`; tarefa 033), senão os ativos já têm preços e só os últimos 5 pregões são gravados por cima dos fictícios. Sem as chaves (ou com chave fora do formato), o container fica no ar sem coletar e registra o erro, que cita as variáveis, nunca os valores. Para trocar uma chave, gere outra, atualize o `.env`, recrie o serviço e revogue a antiga.
 
 ## Banco de dados (migrations)
 

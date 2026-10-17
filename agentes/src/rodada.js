@@ -1,10 +1,19 @@
 'use strict';
 
+const { ClienteHttp } = require('@lista-acoes/comum/cliente-http');
 const { criarClienteApi } = require('./cliente-api');
 
-// Uma rodada de um agente (tarefa 035): cliente da API com a chave do agente, execução e resumo
-// no log. Nunca relança: o agendador segue para a próxima e a CLI decide o código de saída.
-async function executarRodada(agente, { config, log, criarApi = criarClienteApi, opcoes = {} }) {
+// Fontes externas (Yahoo, Binance, RSS): sem cache, já que cada rodada pede dados novos.
+const criarClienteFontes = ({ userAgent, timeoutMs }) =>
+  new ClienteHttp({ userAgent, timeoutMs, cacheSegundos: 0 });
+
+// Uma rodada de um agente (tarefa 035): cliente da API com a chave do agente, cliente das
+// fontes externas, execução e resumo no log. Nunca relança: o agendador segue para a próxima e
+// a CLI decide o código de saída.
+async function executarRodada(
+  agente,
+  { config, log, criarApi = criarClienteApi, criarHttp = criarClienteFontes, opcoes = {} },
+) {
   const inicio = Date.now();
   const api = criarApi({
     url: config.apiUrl,
@@ -12,7 +21,13 @@ async function executarRodada(agente, { config, log, criarApi = criarClienteApi,
     timeoutMs: config.timeoutMs,
   });
   try {
-    const resumo = await agente.executar({ api, log: log.child({ agente: agente.nome }) }, opcoes);
+    const contexto = {
+      api,
+      http: criarHttp(config.fontes),
+      log: log.child({ agente: agente.nome }),
+      agora: Date.now,
+    };
+    const resumo = await agente.executar(contexto, opcoes);
     log.info(
       { agente: agente.nome, duracao_ms: Date.now() - inicio, ...resumo },
       'rodada concluída',
