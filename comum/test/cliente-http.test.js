@@ -1,10 +1,10 @@
-import { ClienteHttp } from './cliente-http';
+const { ClienteHttp, FonteIndisponivel } = require('../src/cliente-http');
 
 const URL_TESTE = 'https://fonte.teste/dados';
 const json = (corpo, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: { 'content-type': 'application/json' } });
 
-// Cliente HTTP das fontes externas do wrapper (tarefa 018).
+// Cliente HTTP das fontes externas (tarefa 018; em comum/ desde a 035, usado pela API e pelos agentes).
 describe('ClienteHttp', () => {
   let esperas;
   const cliente = (fetch, opcoes = {}) =>
@@ -51,18 +51,23 @@ describe('ClienteHttp', () => {
     expect(limitado).toHaveBeenCalledTimes(2);
   });
 
-  it('depois das tentativas, lança fonte_indisponivel (502) com o nome da fonte', async () => {
+  it('depois das tentativas, lança FonteIndisponivel com o nome da fonte', async () => {
     const fetch = jest.fn(async () => json({}, 500));
-    await expect(cliente(fetch).getJson(URL_TESTE, { fonte: 'Yahoo Finance' })).rejects.toEqual(
-      expect.objectContaining({
-        status: 502,
-        response: expect.objectContaining({
-          erro: 'fonte_indisponivel',
-          mensagem: expect.stringContaining('Yahoo Finance'),
-        }),
-      }),
-    );
+    const erro = await cliente(fetch)
+      .getJson(URL_TESTE, { fonte: 'Yahoo Finance' })
+      .catch((e) => e);
+    expect(erro).toBeInstanceOf(FonteIndisponivel);
+    expect(erro).toMatchObject({ name: 'FonteIndisponivel', fonte: 'Yahoo Finance' });
+    expect(erro.message).toContain('Yahoo Finance');
     expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('erroIndisponivel troca o erro lançado (a API usa o 502 do Nest)', async () => {
+    const fetch = jest.fn(async () => json({}, 500));
+    const erroIndisponivel = (fonte) => Object.assign(new Error('fora'), { status: 502, fonte });
+    await expect(
+      cliente(fetch, { erroIndisponivel }).getJson(URL_TESTE, { fonte: 'Binance' }),
+    ).rejects.toMatchObject({ status: 502, fonte: 'Binance' });
   });
 
   it('timeout conta como falha e é repetido', async () => {
@@ -72,16 +77,16 @@ describe('ClienteHttp', () => {
           signal.addEventListener('abort', () => rejeitar(signal.reason));
         }),
     );
-    await expect(cliente(fetch).getJson(URL_TESTE, { fonte: 'Fonte' })).rejects.toEqual(
-      expect.objectContaining({ status: 502 }),
+    await expect(cliente(fetch).getJson(URL_TESTE, { fonte: 'Fonte' })).rejects.toBeInstanceOf(
+      FonteIndisponivel,
     );
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it('corpo que não é JSON numa resposta 200 → fonte_indisponivel', async () => {
     const fetch = jest.fn(async () => new Response('<html>', { status: 200 }));
-    await expect(cliente(fetch).getJson(URL_TESTE, { fonte: 'Fonte' })).rejects.toEqual(
-      expect.objectContaining({ status: 502 }),
+    await expect(cliente(fetch).getJson(URL_TESTE, { fonte: 'Fonte' })).rejects.toBeInstanceOf(
+      FonteIndisponivel,
     );
   });
 

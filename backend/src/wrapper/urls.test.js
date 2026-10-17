@@ -5,10 +5,7 @@ import {
   parDoYahoo,
   simboloYahoo,
   tickerYahooDoPar,
-  urlBinanceKlines,
-  urlCoinGeckoPreco,
   urlGoogle,
-  urlYahooChart,
 } from './urls';
 
 // Parsers de URL e mapas Google ↔ Yahoo do wrapper de ativos (tarefa 018).
@@ -142,23 +139,8 @@ describe('pares (moedas e cripto)', () => {
   });
 });
 
-describe('URLs das fontes', () => {
-  it('monta as URLs no formato da carga inicial', () => {
-    expect(urlYahooChart('PETR4.SA', '2y')).toBe(
-      'https://query1.finance.yahoo.com/v8/finance/chart/PETR4.SA?range=2y&interval=1d',
-    );
-    expect(urlYahooChart('^BVSP', '1d')).toBe(
-      'https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?range=1d&interval=1d',
-    );
-    expect(urlYahooChart('BRL=X', '1d')).toBe(
-      'https://query1.finance.yahoo.com/v8/finance/chart/BRL%3DX?range=1d&interval=1d',
-    );
-    expect(urlBinanceKlines('USDTBRL', 500)).toBe(
-      'https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=500',
-    );
-    expect(urlCoinGeckoPreco('tether', 'BRL')).toBe(
-      'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=brl&include_24hr_change=true',
-    );
+describe('URL do Google Finance', () => {
+  it('monta a página no formato da carga inicial (as das fontes estão em comum/)', () => {
     expect(urlGoogle('CSCO:NASDAQ')).toBe('https://www.google.com/finance/quote/CSCO:NASDAQ');
   });
 });
