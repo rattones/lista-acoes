@@ -42,6 +42,15 @@ export default [
     files: ['backend/babel.config.js'],
     languageOptions: { sourceType: 'commonjs' },
   },
+  // Código comum e agentes coletores (tarefa 035): Node em CommonJS, sem transpilação.
+  {
+    files: ['comum/**/*.js', 'agentes/**/*.js'],
+    languageOptions: { sourceType: 'commonjs' },
+  },
+  {
+    files: ['comum/test/**/*.js', 'agentes/test/**/*.js'],
+    languageOptions: { globals: { ...globals.jest } },
+  },
   // Frontend: Vue 3 (app) e landing page, executados no navegador.
   ...pluginVue.configs['flat/recommended'],
   {

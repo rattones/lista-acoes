@@ -149,12 +149,4 @@ export function parDoYahoo(simbolo) {
   return par ? { base: par[1], cotacao: par[2] } : null;
 }
 
-export const urlYahooChart = (simbolo, range) =>
-  `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(simbolo)}?range=${range}&interval=1d`;
-export const urlBinanceKlines = (simbolo, limite) =>
-  `https://data-api.binance.vision/api/v3/klines?symbol=${simbolo}&interval=1d&limit=${limite}`;
-export const urlCoinGeckoBusca = (consulta) =>
-  `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(consulta)}`;
-export const urlCoinGeckoPreco = (id, moeda) =>
-  `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=${moeda.toLowerCase()}&include_24hr_change=true`;
 export const urlGoogle = (tickerGoogle) => `https://www.google.com/finance/quote/${tickerGoogle}`;

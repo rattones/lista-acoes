@@ -21,19 +21,22 @@ Em PROD, tudo roda em containers Docker numa VPS. Só o proxy publica portas e e
 ```mermaid
 flowchart LR
   navegador([Navegador]) -->|HTTPS 443| proxy
-  agentes([Agentes]) -->|HTTPS + API key| proxy
+  fontes([Yahoo, Binance, RSS])
   subgraph VPS["VPS (Docker)"]
     proxy["proxy<br/>Nginx: TLS, redirect 80→443"]
     certbot["certbot<br/>renova o certificado"]
     backend["backend<br/>API NestJS :3000"]
     frontend["frontend<br/>Nginx: app :8080, landing :8081"]
     db[("SQLite<br/>volume dados")]
+    agentes["agentes<br/>coletores agendados"]
     proxy -->|api.listadecompras.net| backend
     proxy -->|app.listadecompras.net| frontend
     proxy -->|www. e raiz| frontend
     backend --- db
+    agentes -->|API key, rede interna| backend
     certbot -. certificado .- proxy
   end
+  agentes -->|HTTPS| fontes
 ```
 
 Em DEV (servidor casa-ratton), não há proxy: cada serviço usa sua porta (API 3000, app 8080, landing 8081).
@@ -46,6 +49,7 @@ Em DEV (servidor casa-ratton), não há proxy: cada serviço usa sua porta (API 
 | Banco          | SQLite com better-sqlite3 e SQL puro, migrations `.sql` versionadas         |
 | Frontend       | Vue 3, Vite, Vuetify, Pinia, Vue Router; Chart.js no dashboard (tarefa 025) |
 | Testes         | Jest + Supertest (backend), Vitest + Vue Test Utils (frontend)              |
+| Agentes        | Node.js 24 em CommonJS, node-cron, pino, Joi (tarefa 035)                   |
 | Infraestrutura | Docker Compose, Nginx, Let's Encrypt (certbot), GitHub Actions              |
 | E-mail         | Gmail SMTP com nodemailer (tarefa 013)                                      |
 
@@ -55,8 +59,10 @@ Monorepo com npm workspaces:
 
 | Pasta       | Conteúdo                                                     |
 | ----------- | ------------------------------------------------------------ |
+| `comum/`    | Código usado pela API e pelos agentes (cliente HTTP, URLs)   |
 | `backend/`  | API (NestJS) — `api.listadecompras.net`                      |
 | `frontend/` | App (Vue) e landing page — `app.` e `www.listadecompras.net` |
+| `agentes/`  | Agentes coletores de preços e notícias (container agendado)  |
 | `infra/`    | Docker, Nginx e scripts                                      |
 
 ## Comandos (na raiz)
@@ -82,6 +88,8 @@ docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w 
 docker compose -f infra/docker-compose.dev.yml exec backend npm run db:seed-dev -w backend   # dados fictícios (dashboard)
 npm run smoke:dev
 ```
+
+Os agentes coletores sobem junto, mas só agendam as coletas depois que o `agentes/.env` tiver as API keys (veja [Agentes coletores](#agentes-coletores)).
 
 Sem Docker, com Node 24 (`nvm use`):
 
@@ -314,6 +322,21 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Landing page:** página estática, sem JavaScript, com o que é o projeto, como funciona (coleta → análise → nota → decisão), o aviso de acesso por convite e os links "Entrar" e "Acessar o app", que levam a `VITE_APP_URL/login` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro. Tem metatags de SEO e Open Graph (endereço canônico por `VITE_LANDING_URL`), favicon, `robots.txt`, tema claro e escuro, e nota 100 no Lighthouse (performance, acessibilidade, boas práticas e SEO).
 - **Política de privacidade** (`/privacidade.html`): gerada no build a partir do `POLICY.md` da raiz por um plugin do Vite (`frontend/landing/politica.js`, com `marked`), então nunca diverge do documento. No DEV, editar o `POLICY.md` recarrega a página. Um teste impede que ela cite tarefas internas ou leve a arquivos `.md`.
 
+## Agentes coletores
+
+Processo residente no container `agentes` (`agentes/src/main.js`), que agenda as coletas no fuso `TZ` (padrão `America/Sao_Paulo`) e grava pela API, na rede interna do Docker (`http://backend:3000`), com uma API key por agente. A coleta de preços chega na tarefa 036 e a de notícias na 037; por ora, cada rodada só registra que ainda não coleta.
+
+| Agente   | Horário (padrão)                 | Comando                                         | Escopos da API key                           |
+| -------- | -------------------------------- | ----------------------------------------------- | -------------------------------------------- |
+| Preços   | todo dia 19:30 (`CRON_PRECOS`)   | `coletar-precos [--historico] [--ativo CODIGO]` | `ativos:read`, `precos:read`, `precos:write` |
+| Notícias | todo dia 12:00 (`CRON_NOTICIAS`) | `coletar-noticias [--ativo CODIGO]`             | `ativos:read`, `noticias:write`              |
+
+- **Configuração:** `agentes/.env` (modelo em `agentes/.env-example`): `API_KEY_PRECOS` e `API_KEY_NOTICIAS`, geradas por um admin na tela **API keys** do app. Configuração inválida não derruba o container: o erro (que cita as variáveis, nunca os valores) vai para o log a cada 6 horas e nada é agendado até o `.env` ser corrigido e o serviço recriado (`up -d agentes`).
+- **Rodada avulsa:** `docker compose -f infra/docker-compose.<dev|prod>.yml run --rm agentes ...` com `npm run coletar-precos -w agentes` (DEV) ou `node src/cli.js coletar-precos` (PROD). Código de saída: 0 sem falhas, 1 com falha ou configuração inválida, 2 uso incorreto.
+- **Rodadas:** uma rodada não começa enquanto a anterior do mesmo agente ainda está rodando; erro numa rodada fica no log e não para o agendador. Cada rodada termina com um resumo (`rodada concluída`, com duração e contagens).
+- **Cliente da API** (`agentes/src/cliente-api.js`): `Authorization: Bearer <chave>`, lotes de até 1000 itens por requisição (`enviarLote`) e erros da API como `ErroApi`. A chave nunca vai para mensagens de erro nem para o log (`redact`).
+- **Código comum** (`comum/`, CommonJS, sem build): `ClienteHttp` (timeout, novas tentativas com backoff, cache curto; esgotadas as tentativas, `FonteIndisponivel`, que a API troca pelo 502 `fonte_indisponivel`) e as URLs do Yahoo, Binance e CoinGecko, usados pelo wrapper da API e pelos agentes.
+
 ## Produção (Docker + Nginx)
 
 `docker compose -f infra/docker-compose.prod.yml up -d --build --wait` sobe o proxy Nginx (portas 80 e 443), a API, o frontend e o certbot. O proxy roteia por subdomínio: `api.` vai para a API, `app.` para o app, e `www.` e o domínio raiz para a landing page. Tudo é servido em HTTPS com certificado da Let's Encrypt (renovação automática), e o HTTP redireciona com 301. `npm run smoke:prod` testa a stack e `npm run verifica:https` confere o certificado de PROD. Na VPS, `infra/scripts/deploy.sh` faz o deploy de uma nova versão (pull, build, migrations, `up --wait` e verificação de saúde) e volta às imagens anteriores se algo falhar; `npm run smoke:pos-deploy` confere de fora a saúde da API, o app, a landing e o login do admin. `configurar-ssh.sh` e `preparar-vps.sh` preparam o acesso por chave e a VPS. Backup semanal do SQLite na VPS (`backup.sh`, 8 cópias), cópia externa puxada pelo casa-ratton (`puxar-backup.sh`, 26 cópias) e restauração conferida (`restaurar-backup.sh`). Detalhes no [INSTALL.md](INSTALL.md#produção-vps-com-docker-e-nginx).
@@ -322,12 +345,12 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda a cada push na `main` e em todo pull request, com quatro jobs em paralelo:
 
-| Job                        | O que verifica                                                           |
-| -------------------------- | ------------------------------------------------------------------------ |
-| Lint e estrutura           | `npm run lint` e `npm run test:estrutura`                                |
-| Testes do backend          | `npm test -w backend` e `npm run build -w backend`                       |
-| Testes e build do frontend | `npm test -w frontend` e `npm run build -w frontend`                     |
-| Imagens e smoke de PROD    | Build das imagens de PROD (sem push), stack no ar e `npm run smoke:prod` |
+| Job                        | O que verifica                                                                     |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| Lint e estrutura           | `npm run lint` e `npm run test:estrutura`                                          |
+| Testes do backend          | `npm test -w backend`, `npm run build -w backend` e `npm test -w comum -w agentes` |
+| Testes e build do frontend | `npm test -w frontend` e `npm run build -w frontend`                               |
+| Imagens e smoke de PROD    | Build das imagens de PROD (sem push), stack no ar e `npm run smoke:prod`           |
 
 A `main` é protegida: os quatro jobs são checks obrigatórios, inclusive para administradores. Um PR só pode ser mergeado com todos verdes e com a branch atualizada em relação à `main`. Push direto, force push e exclusão da `main` estão bloqueados.
 

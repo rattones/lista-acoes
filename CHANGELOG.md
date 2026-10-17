@@ -18,6 +18,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- O cliente HTTP e as URLs das fontes do wrapper saem do backend para o `comum/` (tarefa 035); esgotadas as tentativas, o cliente lança `FonteIndisponivel`, que a API continua respondendo como 502 `fonte_indisponivel`.
+- `deploy.sh` exige o `agentes/.env` e inclui a imagem dos agentes no rollback; o CI roda os testes do `comum/` e dos agentes no job do backend e cria chaves fictícias para o smoke de PROD. O DEV precisa de `up --build` (novos workspaces) (tarefa 035).
 - `preparar-vps.sh` instala `rsync` e `cronie` e põe o `rrsync` no PATH; POLICY informa a frequência e a retenção das cópias de segurança (tarefa 028).
 - `npm run test:estrutura` também roda os testes dos scripts de deploy e da VPS; INSTALL com o passo a passo da primeira subida e do deploy de novas versões (tarefa 027).
 - POLICY: sem referências a tarefas internas nem link para arquivo do repositório (agora também é publicada na landing), e a nota de "versão inicial" dá lugar à data da última atualização (tarefa 026).
@@ -56,6 +58,8 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Estrutura dos agentes coletores (tarefa 035): workspace `agentes/` com processo residente que agenda as coletas (`node-cron`, fuso `America/Sao_Paulo`; preços às 19:30 e notícias às 12:00), CLI para rodadas avulsas (`coletar-precos [--historico] [--ativo]`, `coletar-noticias [--ativo]`), configuração validada pelo `agentes/.env` com uma API key por agente, cliente da API com lotes de até 1000 itens e log em JSON sem as chaves. Serviço `agentes` (sem porta) nos composes de DEV e PROD e imagem `lista-acoes-agentes`. As coletas em si chegam nas tarefas 036 e 037.
+- Workspace `comum/` (tarefa 035) com o cliente HTTP das fontes externas e as URLs do Yahoo, Binance e CoinGecko, usado pela API e pelos agentes.
 - Dashboard (tarefa 025): rotas `GET /v1/dashboard/resumo`, `/historico` e `/noticias` (só leitura, usuários logados, sem API key) e a tela inicial do app com cards do resumo atual, gráfico de preço (linha) e nota (barras) do ativo em foco com Chart.js (`chart.js` + `vue-chartjs`), tabela de indicadores com destaques de IFR e %B, últimas notícias e filtros rápidos e avançados guardados na URL. O DEV precisa de `up --build` por causa das novas dependências.
 - `npm run db:seed-dev -w backend` (`cli.js seed-dev`): dados fictícios do DEV para o dashboard, determinísticos e marcados como `seed` (preços, execuções, sinais com indicadores calculados dos preços e notícias); `--limpar` só apaga; recusa em produção (tarefa 032).
 - App: switch "Mostrar revogadas (N)" na tela de API keys; por padrão a lista mostra só as ativas, e a lista vazia orienta a ligar o switch quando só há revogadas (tarefa 031).

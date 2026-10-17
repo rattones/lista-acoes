@@ -24,6 +24,7 @@ Cada serviço tem um `.env-example` com as variáveis documentadas. Copie para `
 cp .env-example .env
 cp backend/.env-example backend/.env
 cp frontend/.env-example frontend/.env
+cp agentes/.env-example agentes/.env
 ```
 
 Arquivos `.env` nunca são versionados; somente os `.env-example`.
@@ -35,6 +36,17 @@ echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env
 ```
 
 Trocar o segredo encerra todas as sessões abertas.
+
+### API keys dos agentes coletores
+
+Os agentes (`agentes/.env`) precisam de duas API keys, geradas por um admin no app, em **API keys** → **Nova chave** (a chave completa aparece uma única vez):
+
+| Variável           | Nome sugerido       | Escopos                                      |
+| ------------------ | ------------------- | -------------------------------------------- |
+| `API_KEY_PRECOS`   | coletor de preços   | `ativos:read`, `precos:read`, `precos:write` |
+| `API_KEY_NOTICIAS` | coletor de notícias | `ativos:read`, `noticias:write`              |
+
+Cole as chaves no `agentes/.env` (`chmod 600 agentes/.env`) e recrie o serviço: `docker compose -f infra/docker-compose.<dev|prod>.yml up -d agentes`. O log deve mostrar `agentes agendados` com os horários. Sem as chaves (ou com chave fora do formato), o container fica no ar sem coletar e registra o erro, que cita as variáveis, nunca os valores. Para trocar uma chave, gere outra, atualize o `.env`, recrie o serviço e revogue a antiga.
 
 ## Banco de dados (migrations)
 
@@ -128,7 +140,8 @@ docker compose -f infra/docker-compose.dev.yml down             # para (o banco 
 
 - **Hot reload:** o código (`backend/src`, `frontend/app`, `frontend/landing`, as configs do Vite e o `POLICY.md`, de onde sai a página de privacidade da landing) é montado nos containers. A API reinicia sozinha (nodemon) e o app atualiza no navegador (HMR do Vite). Arquivos montados um a um (`backend/babel.config.js` e as configs do Vite) não acompanham trocas feitas pelo git (checkout, pull, merge): o container continua vendo a versão antiga. Depois de um `git pull`, rode `docker compose -f infra/docker-compose.dev.yml up -d --force-recreate`.
 - **Logs:** `docker compose -f infra/docker-compose.dev.yml logs -f backend`. A rotação (5 arquivos de 10 MB por serviço) vale para containers criados depois da tarefa 029; recrie com `up -d` se necessário.
-- **Dependências:** ficam dentro da imagem. Depois de mudar um `package.json` (ex.: o `marked` da landing, tarefa 026), rode o `up` com `--build`. A imagem é a mesma dos dois serviços, então o backend também é recriado.
+- **Dependências:** ficam dentro da imagem. Depois de mudar um `package.json` (ex.: o `marked` da landing, tarefa 026), rode o `up` com `--build`. A imagem é a mesma dos três serviços, então todos são recriados.
+- **Agentes:** o serviço `agentes` (sem porta) monta `agentes/src` e `comum/src` (também montado no backend). O `agentes/.env` é opcional no DEV: sem ele, o container sobe sem coletar e registra o erro (veja [API keys dos agentes coletores](#api-keys-dos-agentes-coletores)). Rodada avulsa: `docker compose -f infra/docker-compose.dev.yml run --rm agentes npm run coletar-precos -w agentes`. Código novo nos agentes: `docker compose -f infra/docker-compose.dev.yml restart agentes`.
 - **Configuração:** as variáveis de DEV estão no `docker-compose.dev.yml`. O `backend/.env` é **obrigatório** (o compose não sobe sem ele) e guarda os segredos, como o `JWT_SEGREDO` (`echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> backend/.env`), e ajustes como `LOG_LEVEL`; as variáveis do compose têm precedência sobre ele.
 - **API no app:** em DEV, o app chama a API pela mesma origem (`/v1`), e o Vite encaminha para o container `backend` (`API_PROXY`). Assim, o app funciona pelos dois hostnames sem precisar de um build para cada um. A porta 3000 continua aberta para acesso direto, com CORS liberado para o app nos dois hostnames.
 - **Banco SQLite:** fica no volume nomeado `lista-acoes-dev_dados`, montado em `backend/data`. Ele sobrevive ao `down`; só o `down -v` apaga. As migrations (`backend/migrations`, montada no container) são aplicadas com `docker compose -f infra/docker-compose.dev.yml exec backend npm run db:migrate -w backend` (e `db:status` para conferir). O primeiro admin: `docker compose -f infra/docker-compose.dev.yml exec backend npm run db:admin -w backend -- --email <e-mail> --nome <nome>`.
@@ -188,9 +201,10 @@ VPS: AlmaLinux 9, SSH na porta **22022**. Os scripts ficam em `infra/scripts/` e
    git clone https://github.com/rattones/lista-acoes.git && cd lista-acoes
    cp infra/.env-example infra/.env              # LETSENCRYPT_EMAIL; revise o resto
    cp backend/.env-example backend/.env          # SMTP_USER, SMTP_PASS e MAIL_FROM (obrigatórios em produção)
+   cp agentes/.env-example agentes/.env          # as API keys entram depois do admin (passo 7)
    # Segredo só de PROD, nunca reaproveitado (substitui a linha vazia do exemplo; | como separador, já que o base64 pode ter /)
    sed -i "s|^JWT_SEGREDO=.*|JWT_SEGREDO=$(openssl rand -base64 48 | tr -d '\n')|" backend/.env
-   chmod 600 infra/.env backend/.env
+   chmod 600 infra/.env backend/.env agentes/.env
    ```
 
    `NODE_ENV`, `PORT`, `CORS_ORIGENS`, `CONFIAR_PROXY` e `APP_URL` vêm do compose; os valores do `backend/.env` para elas são ignorados.
@@ -208,7 +222,8 @@ VPS: AlmaLinux 9, SSH na porta **22022**. Os scripts ficam em `infra/scripts/` e
    ```
 
 6. **Admin inicial:** `docker compose -f infra/docker-compose.prod.yml exec backend node dist/database/cli.js admin --email <e-mail> --nome <nome>` (a senha é pedida sem eco).
-7. **Conferir** (na sua máquina):
+7. **Agentes:** entre no app como admin, gere as duas API keys e preencha o `agentes/.env` ([API keys dos agentes coletores](#api-keys-dos-agentes-coletores)); depois, `docker compose -f infra/docker-compose.prod.yml up -d agentes`.
+8. **Conferir** (na sua máquina):
 
    ```sh
    npm run verifica:https                                        # certificado, HSTS e 301 nos quatro hosts
@@ -223,15 +238,15 @@ VPS: AlmaLinux 9, SSH na porta **22022**. Os scripts ficam em `infra/scripts/` e
 
 Na VPS, como `deploy`, na raiz do repositório: `infra/scripts/deploy.sh`. Depois, na sua máquina, `npm run smoke:pos-deploy`.
 
-1. Confere `infra/.env` e `backend/.env` e recusa se houver alterações locais não commitadas.
+1. Confere `infra/.env`, `backend/.env` e `agentes/.env` e recusa se houver alterações locais não commitadas.
 2. `git pull --ff-only`.
-3. Marca as imagens em uso como `lista-acoes-backend:anterior` e `lista-acoes-frontend:anterior`.
+3. Marca as imagens em uso como `lista-acoes-backend:anterior`, `lista-acoes-frontend:anterior` e `lista-acoes-agentes:anterior`.
 4. Build. Se falhar, nada muda: os containers continuam no commit anterior.
 5. Migrations com a imagem nova, num container avulso, antes de trocar os containers. Se falharem, nada muda.
 6. `up -d --wait` (espera os healthchecks) e `GET https://api.listadecompras.net/v1/health` (10 tentativas, 6 s entre elas).
 7. Se o passo 6 falhar, **volta às imagens anteriores** e informa o commit anterior, para alinhar o código (`git checkout <commit>`).
 
-As migrations só avançam: o rollback volta o código, não o schema. Por isso as migrations devem ser compatíveis com a versão anterior (acrescentar, não remover nem renomear), e, antes de um deploy com migration, convém rodar o `backup.sh` (além do semanal). No primeiro deploy não há imagens anteriores, e o rollback não acontece.
+As migrations só avançam: o rollback volta o código, não o schema. Por isso as migrations devem ser compatíveis com a versão anterior (acrescentar, não remover nem renomear), e, antes de um deploy com migration, convém rodar o `backup.sh` (além do semanal). No primeiro deploy não há imagens anteriores, e o rollback não acontece. O mesmo vale para o primeiro deploy com os agentes (tarefa 035): sem `lista-acoes-agentes:latest`, esse deploy não tem rollback automático. Antes dele, crie o `agentes/.env` (`cp agentes/.env-example agentes/.env`, com as chaves geradas no app, que já está no ar), senão o deploy para no passo 1.
 
 O `certificado-inicial.sh`:
 

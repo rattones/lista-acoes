@@ -122,6 +122,27 @@ services:
       retries: 3
       start_period: 5s
 
+  # Agentes coletores (tarefa 035): agendador residente, sem porta publicada; chama a API pela
+  # rede interna com as API keys do agentes/.env (veja agentes/.env-example). Rodada avulsa:
+  #   docker compose -f infra/docker-compose.prod.yml run --rm agentes node src/cli.js coletar-precos
+  agentes:
+    logging: *logging
+    build:
+      context: ..
+      dockerfile: infra/docker/agentes.Dockerfile
+    image: lista-acoes-agentes
+    restart: unless-stopped
+    init: true
+    env_file:
+      - path: ../agentes/.env
+        required: true
+    environment:
+      API_URL: http://backend:3000
+      TZ: America/Sao_Paulo
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   # Banco SQLite de PROD. Não apague: `down -v` remove os dados (backup: tarefa 028).
   dados:

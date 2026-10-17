@@ -1,0 +1,28 @@
+{
+  "name": "@lista-acoes/agentes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agentes coletores de preços e notícias, que gravam pela API com API keys",
+  "type": "commonjs",
+  "scripts": {
+    "iniciar": "node src/main.js",
+    "coletar-precos": "node src/cli.js coletar-precos",
+    "coletar-noticias": "node src/cli.js coletar-noticias",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*.test.js"
+    ]
+  },
+  "dependencies": {
+    "@lista-acoes/comum": "0.0.0",
+    "joi": "^18.2.9",
+    "node-cron": "^4.6.0",
+    "pino": "^10.4.0"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2"
+  }
+}
