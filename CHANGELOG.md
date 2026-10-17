@@ -6,6 +6,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Corrigido
 
+- Dashboard: clicar no card do ativo em foco não fazia nada; agora desfaz o foco (nenhum card destacado e, no lugar do gráfico, o aviso "Clique num card para ver o gráfico"), e `foco=nenhum` na URL mantém essa visão ao recarregar ou abrir o link (tarefa 038).
 - Backup do SQLite: o banco atual sem tabelas (vazio, num desastre) fazia o backup falhar (`no such table: ativos`) e bloqueava a restauração, que o guarda antes da troca; agora a contagem vem vazia e o `verificar` informa "sem as tabelas do sistema" (tarefa 028).
 - `puxar-backup.sh`: o `rrsync -ro` da VPS recusava o caminho remoto `./` ("unsafe arg"); agora vai vazio (`deploy@host:`) (tarefa 028).
 - Backup do SQLite: a cópia saía em modo WAL e não abria numa pasta só de leitura (a restauração confere a cópia montada assim: "unable to open database file"); agora é um arquivo único (`journal_mode = DELETE`) (tarefa 028).

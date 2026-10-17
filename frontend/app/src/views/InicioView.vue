@@ -9,6 +9,7 @@ import GraficoAtivo from '../components/dashboard/GraficoAtivo.vue';
 import TabelaIndicadores from '../components/dashboard/TabelaIndicadores.vue';
 import UltimasNoticias from '../components/dashboard/UltimasNoticias.vue';
 import {
+  SEM_FOCO,
   filtrarLinhas,
   filtrosPadrao,
   inicioDoPeriodo,
@@ -44,12 +45,16 @@ const filtradas = computed(() => filtrarLinhas(linhas.value, filtros.value));
 const de = computed(() => inicioDoPeriodo(filtros.value.periodo));
 
 // O card clicado; se os filtros o tiram (ou ao abrir), o primeiro da lista (maior nota).
-const emFoco = computed(
-  () => filtradas.value.find((l) => l.ativo === filtros.value.foco) ?? filtradas.value[0] ?? null,
+// Com o foco desfeito (SEM_FOCO), nenhum.
+const emFoco = computed(() =>
+  filtros.value.foco === SEM_FOCO
+    ? null
+    : (filtradas.value.find((l) => l.ativo === filtros.value.foco) ?? filtradas.value[0] ?? null),
 );
 
+// Clicar no card em foco desfaz o foco (tarefa 038); em outro, foca esse.
 const focar = (codigo) => {
-  filtros.value = { ...filtros.value, foco: codigo };
+  filtros.value = { ...filtros.value, foco: emFoco.value?.ativo === codigo ? SEM_FOCO : codigo };
 };
 
 // Respostas fora de ordem (troca rápida de foco ou período) são descartadas.
@@ -114,11 +119,13 @@ onMounted(async () => {
   filtros.value = lerFiltros(route.query, linhas.value);
   carregando.value = false;
 
-  // O foco só vai para a query quando é o que está na tela (escolhido e não tirado pelos filtros).
+  // O foco só vai para a query quando é o que está na tela (escolhido e não tirado pelos filtros)
+  // ou quando foi desfeito (foco=nenhum, tarefa 038).
   watch(
     [filtros, emFoco],
     () => {
-      const foco = filtros.value.foco === emFoco.value?.ativo ? filtros.value.foco : null;
+      const { foco: escolhido } = filtros.value;
+      const foco = escolhido === SEM_FOCO || escolhido === emFoco.value?.ativo ? escolhido : null;
       router.replace({ query: paraQuery({ ...filtros.value, foco }) });
     },
     { immediate: true },
@@ -181,6 +188,16 @@ onMounted(async () => {
           :erro="erroHistorico"
           class="mb-4"
         />
+        <v-alert
+          v-else-if="filtradas.length"
+          data-teste="sem-foco"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          Clique num card para ver o gráfico.
+        </v-alert>
       </template>
 
       <v-row>
