@@ -14,6 +14,39 @@ class ErroConfiguracao extends Error {
 }
 
 const CHAVE = /^la_[0-9a-f]{8}_[0-9a-f]{32}$/;
+
+// Feeds RSS gerais de mercado (tarefa 037): notícias sem ativo. FEEDS_GERAIS troca a lista.
+const FEEDS_GERAIS = [
+  'InfoMoney|https://www.infomoney.com.br/feed/',
+  'Valor Econômico|https://pox.globo.com/rss/valor/',
+  'Money Times|https://www.moneytimes.com.br/feed/',
+  'CNBC|https://www.cnbc.com/id/100003114/device/rss/rss.html',
+  'MarketWatch|https://feeds.content.dowjones.io/public/rss/mw_topstories',
+].join(';');
+
+// "Nome|url;Nome|url" → [{ nome, url }]; "nenhum" = sem feeds gerais.
+const lerFeeds = (texto) =>
+  texto.trim().toLowerCase() === 'nenhum'
+    ? []
+    : texto
+        .split(';')
+        .map((par) => par.trim())
+        .filter(Boolean)
+        .map((par) => {
+          const [nome, url] = par.split('|').map((parte) => parte?.trim());
+          return { nome, url };
+        });
+const feedsValidos = (valor, ajudantes) => {
+  const feeds = lerFeeds(valor);
+  const valida = (url) => {
+    try {
+      return ['http:', 'https:'].includes(new URL(url).protocol);
+    } catch {
+      return false;
+    }
+  };
+  return feeds.every((f) => f.nome && valida(f.url)) ? feeds : ajudantes.error('any.invalid');
+};
 const NIVEIS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'];
 
 const fusoValido = (valor, ajudantes) => {
@@ -56,6 +89,10 @@ const esquema = Joi.object({
     'Mozilla/5.0 (compatible; lista-acoes-agentes/1.0; +https://www.listadecompras.net)',
   ),
   FONTES_TIMEOUT_MS: Joi.number().integer().min(1000).default(15000),
+  FEEDS_GERAIS: Joi.string()
+    .default(FEEDS_GERAIS)
+    .custom(feedsValidos)
+    .messages({ 'any.invalid': '{{#label}} deve ser Nome|url;Nome|url (http/https) ou nenhum' }),
   CRON_PRECOS: Joi.string()
     .default('30 19 * * *')
     .custom(horarioValido)
@@ -83,6 +120,10 @@ function lerConfiguracao(env = process.env) {
     timeoutMs: value.API_TIMEOUT_MS,
     cron: { precos: value.CRON_PRECOS, noticias: value.CRON_NOTICIAS },
     fontes: { userAgent: value.FONTES_USER_AGENT, timeoutMs: value.FONTES_TIMEOUT_MS },
+    // O Joi não passa o padrão pelo custom: a lista padrão chega como texto.
+    feedsGerais: Array.isArray(value.FEEDS_GERAIS)
+      ? value.FEEDS_GERAIS
+      : lerFeeds(value.FEEDS_GERAIS),
   };
 }
 

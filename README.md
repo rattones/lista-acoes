@@ -6,7 +6,7 @@ Gerenciador de ações: acompanha o mercado, armazena os dados coletados por age
 
 ## Visão geral
 
-- **Agentes coletores** enviam à API os preços diários (Yahoo e Binance, todo dia às 19:30) e as notícias (etapa seguinte) dos ativos monitorados, autenticados por API key.
+- **Agentes coletores** enviam à API os preços diários (Yahoo e Binance, todo dia às 19:30) e as notícias (RSS do Google News e de portais de mercado, todo dia às 12:00) dos ativos monitorados, autenticados por API key.
 - Um **agente de decisão** externo (etapa futura) lê esses dados e grava a nota de cada ativo (1 a 5). A API só armazena e fornece os dados; ela não calcula a nota.
 - O **app** mostra o dashboard, os ativos monitorados e os usuários. O acesso é só por convite: não existe cadastro aberto.
 - A **landing page** apresenta o projeto e leva ao app.
@@ -324,19 +324,18 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 
 ## Agentes coletores
 
-Processo residente no container `agentes` (`agentes/src/main.js`), que agenda as coletas no fuso `TZ` (padrão `America/Sao_Paulo`) e grava pela API, na rede interna do Docker (`http://backend:3000`), com uma API key por agente. A coleta de notícias chega na tarefa 037; por ora, a rodada dela só registra que ainda não coleta.
-
-| Agente   | Horário (padrão)                 | Comando                                         | Escopos da API key                           |
+Processo residente no container `agentes` (`agentes/src/main.js`), que agenda as coletas no fuso `TZ` (padrão `America/Sao_Paulo`) e grava pela API, na rede interna do Docker (`http://backend:3000`), com uma API key por agente. | Agente | Horário (padrão) | Comando | Escopos da API key |
 | -------- | -------------------------------- | ----------------------------------------------- | -------------------------------------------- |
-| Preços   | todo dia 19:30 (`CRON_PRECOS`)   | `coletar-precos [--historico] [--ativo CODIGO]` | `ativos:read`, `precos:read`, `precos:write` |
-| Notícias | todo dia 12:00 (`CRON_NOTICIAS`) | `coletar-noticias [--ativo CODIGO]`             | `ativos:read`, `noticias:write`              |
+| Preços | todo dia 19:30 (`CRON_PRECOS`) | `coletar-precos [--historico] [--ativo CODIGO]` | `ativos:read`, `precos:read`, `precos:write` |
+| Notícias | todo dia 12:00 (`CRON_NOTICIAS`) | `coletar-noticias [--ativo CODIGO]` | `ativos:read`, `noticias:write` |
 
 - **Configuração:** `agentes/.env` (modelo em `agentes/.env-example`): `API_KEY_PRECOS` e `API_KEY_NOTICIAS`, geradas por um admin na tela **API keys** do app. Configuração inválida não derruba o container: o erro (que cita as variáveis, nunca os valores) vai para o log a cada 6 horas e nada é agendado até o `.env` ser corrigido e o serviço recriado (`up -d agentes`).
 - **Rodada avulsa:** `docker compose -f infra/docker-compose.<dev|prod>.yml run --rm agentes ...` com `npm run coletar-precos -w agentes` (DEV) ou `node src/cli.js coletar-precos` (PROD). Código de saída: 0 sem falhas, 1 com falha ou configuração inválida, 2 uso incorreto.
 - **Rodadas:** uma rodada não começa enquanto a anterior do mesmo agente ainda está rodando; erro numa rodada fica no log e não para o agendador. Cada rodada termina com um resumo (`rodada concluída`, com duração e contagens).
 - **Cliente da API** (`agentes/src/cliente-api.js`): `Authorization: Bearer <chave>`, lotes de até 1000 itens por requisição (`enviarLote`) e erros da API como `ErroApi`. A chave nunca vai para mensagens de erro nem para o log (`redact`).
 - **Preços** (`agentes/src/precos/`, tarefa 036): para cada ativo com status `ativo`, os últimos 5 pregões pela `url_historico`, gravados por `POST /v1/precos/lote` (upsert por ativo e data, que corrige feriados, dias sem coleta e ajustes da fonte). Yahoo chart (`range=5d`): OHLCV com a data no fuso da bolsa, preços nas casas do `priceHint` e moeda de `meta.currency`; Binance klines (`limit=5`): data em UTC, moeda pela cotação do par (`USDTBRL` → BRL), e o candle do dia ainda aberto fica para a rodada seguinte. Ativo sem nenhum preço (ou com `--historico`) recebe 2 anos (Yahoo `range=2y`; Binance em páginas de 1000 dias). Pregão sem fechamento não é enviado. `url_historico` em outro formato, fonte fora do ar ou lote recusado contam como falha do ativo, sem parar os outros; o resumo traz `ativos`, `historico`, `inseridos`, `atualizados` e `falhas`.
-- **Código comum** (`comum/`, CommonJS, sem build): `ClienteHttp` (timeout, novas tentativas com backoff, cache curto; esgotadas as tentativas, `FonteIndisponivel`, que a API troca pelo 502 `fonte_indisponivel`) e as URLs do Yahoo, Binance e CoinGecko, usados pelo wrapper da API e pelos agentes.
+- **Notícias** (`agentes/src/noticias/`, tarefa 037): para cada ativo com status `ativo`, a busca do Google News RSS pelo código e pelo nome (`"PETR4" OR "Petrobras PN" when:7d`), em pt-BR e en-US, gravada com o `ativo_id`; e os feeds gerais de mercado (`FEEDS_GERAIS`; padrão InfoMoney, Valor Econômico, Money Times, CNBC e MarketWatch), gravados como notícias gerais, sem `ativo_id`. Só as publicadas nos últimos 7 dias, até 20 por feed (as mais recentes); a mesma URL entra uma vez por rodada, valendo a do ativo. Campos: título (sem o " - Veículo" do Google News), resumo da descrição sem HTML (até 500 caracteres; null quando só repete o título), fonte (o veículo do `<source>` ou o nome do feed), URL e `publicada_em` no horário local. O `sentimento` fica para o agente de decisão. Grava por `POST /v1/noticias/lote` (upsert pela URL) em lotes de 200; feed fora do ar ou com XML inválido conta como falha, sem parar os outros. Com `--ativo`, só os feeds desse ativo.
+- **Código comum** (`comum/`, CommonJS, sem build): `ClienteHttp` (`getJson` e `getTexto`, para os feeds; timeout, novas tentativas com backoff, cache curto; esgotadas as tentativas, `FonteIndisponivel`, que a API troca pelo 502 `fonte_indisponivel`) e as URLs do Yahoo, Binance e CoinGecko, usados pelo wrapper da API e pelos agentes.
 
 ## Produção (Docker + Nginx)
 

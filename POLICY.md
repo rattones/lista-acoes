@@ -30,7 +30,7 @@ O Lista de Ações é um sistema privado de acompanhamento de ações, de acesso
 
 Os agentes coletam preços e notícias **públicos** sobre os ativos monitorados. Esses dados não são pessoais.
 
-Ao cadastrar ou atualizar um ativo, a API consulta o Yahoo Finance, a Binance e o CoinGecko enviando só o código do ativo (ex.: `PETR4.SA`). O agente de preços consulta, uma vez por dia, o Yahoo Finance e a Binance da mesma forma. Nenhum dado pessoal é enviado a esses serviços.
+Ao cadastrar ou atualizar um ativo, a API consulta o Yahoo Finance, a Binance e o CoinGecko enviando só o código do ativo (ex.: `PETR4.SA`). O agente de preços consulta, uma vez por dia, o Yahoo Finance e a Binance da mesma forma. O agente de notícias lê, uma vez por dia, o RSS do Google News (buscando o código e o nome do ativo) e feeds públicos de portais de mercado. Nenhum dado pessoal é enviado a esses serviços.
 
 ## Logs de acesso
 

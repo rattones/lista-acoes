@@ -1,5 +1,6 @@
 'use strict';
 
+const { listarAtivos } = require('../ativos');
 const { fonteDaUrl, lerBinance, lerYahoo, moedaDoPar, urlBinance, urlYahoo } = require('./fontes');
 
 // Coletor de preços (tarefa 036): para cada ativo com status "ativo", os últimos 5 pregões pela
@@ -10,23 +11,6 @@ const { fonteDaUrl, lerBinance, lerYahoo, moedaDoPar, urlBinance, urlYahoo } = r
 const DIA = 24 * 60 * 60 * 1000;
 const DIAS_HISTORICO = 730;
 const PAGINA_BINANCE = 1000;
-const POR_PAGINA = 100;
-
-async function listarAtivos(api, codigo) {
-  const ativos = [];
-  for (let pagina = 1; ; pagina += 1) {
-    const query = new URLSearchParams({
-      status: 'ativo',
-      ordenar: 'ativo',
-      por_pagina: String(POR_PAGINA),
-      pagina: String(pagina),
-    });
-    if (codigo) query.set('ativo', codigo);
-    const { dados, paginacao } = await api.get(`/v1/ativos?${query}`);
-    ativos.push(...dados);
-    if (pagina >= (paginacao?.total_paginas ?? 1)) return ativos;
-  }
-}
 
 async function temPrecos(api, ativoId) {
   const query = new URLSearchParams({ ativo_id: String(ativoId), por_pagina: '1' });

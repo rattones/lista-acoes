@@ -26,6 +26,8 @@ async function executarRodada(
       http: criarHttp(config.fontes),
       log: log.child({ agente: agente.nome }),
       agora: Date.now,
+      fuso: config.fuso,
+      feedsGerais: config.feedsGerais,
     };
     const resumo = await agente.executar(contexto, opcoes);
     log.info(

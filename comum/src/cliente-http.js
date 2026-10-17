@@ -10,6 +10,8 @@ class FonteIndisponivel extends Error {
 }
 
 const CACHE_MAXIMO = 500;
+const ACEITA_XML =
+  'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8';
 const repetir = (status) => status === 429 || status >= 500;
 
 // GET de JSON nas fontes externas (tarefa 018; em comum/ desde a 035): timeout por tentativa,
@@ -34,8 +36,18 @@ class ClienteHttp {
     this.cache = new Map();
   }
 
-  async getJson(url, { fonte }) {
-    const guardado = this.cache.get(url);
+  getJson(url, { fonte }) {
+    return this.obter(url, { fonte, accept: 'application/json', ler: (r) => r.json() });
+  }
+
+  // Corpo como texto (feeds RSS, tarefa 037), com as mesmas tentativas e o mesmo cache.
+  getTexto(url, { fonte }) {
+    return this.obter(url, { fonte, accept: ACEITA_XML, ler: (r) => r.text() });
+  }
+
+  async obter(url, { fonte, accept, ler }) {
+    const chave = `${accept} ${url}`;
+    const guardado = this.cache.get(chave);
     if (guardado && guardado.expira > this.agora()) return guardado.resposta;
 
     for (let tentativa = 1; tentativa <= this.tentativas; tentativa += 1) {
@@ -43,7 +55,7 @@ class ClienteHttp {
       let resposta;
       try {
         resposta = await this.fetch(url, {
-          headers: { 'user-agent': this.userAgent, accept: 'application/json' },
+          headers: { 'user-agent': this.userAgent, accept },
           signal: AbortSignal.timeout(this.timeoutMs),
         });
       } catch {
@@ -53,22 +65,22 @@ class ClienteHttp {
 
       let corpo;
       try {
-        corpo = await resposta.json();
+        corpo = await ler(resposta);
       } catch {
         corpo = undefined;
       }
       if (resposta.ok && corpo === undefined) throw this.erroIndisponivel(fonte);
       const resultado = { status: resposta.status, corpo };
-      if (resposta.ok) this.guardar(url, resultado);
+      if (resposta.ok) this.guardar(chave, resultado);
       return resultado;
     }
     throw this.erroIndisponivel(fonte);
   }
 
-  guardar(url, resposta) {
+  guardar(chave, resposta) {
     if (this.cacheSegundos <= 0) return;
     if (this.cache.size >= CACHE_MAXIMO) this.cache.delete(this.cache.keys().next().value);
-    this.cache.set(url, { resposta, expira: this.agora() + this.cacheSegundos * 1000 });
+    this.cache.set(chave, { resposta, expira: this.agora() + this.cacheSegundos * 1000 });
   }
 }
 
