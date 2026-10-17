@@ -139,15 +139,27 @@ export class Repositorio {
   // Insere ou atualiza (pela chave única `chave`) todos os itens numa transação: se um falhar,
   // nada é gravado. No conflito, só os campos enviados no item são alterados; excluido_em
   // não muda (um registro excluído pelo admin continua excluído).
-  upsertLote(itens, chave) {
-    const existe = this.db.prepare(
-      `SELECT 1 FROM ${this.tabela} WHERE ${chave.map((c) => `${c} = @${c}`).join(' AND ')}`,
-    );
+  // substituir: condição SQL sobre o registro existente (ex.: "fonte = 'seed'", tarefa 033);
+  // quando vale, o registro é trocado inteiro pelo item (sem herdar campos) e conta como
+  // atualizado.
+  upsertLote(itens, chave, { substituir } = {}) {
+    const onde = chave.map((c) => `${c} = @${c}`).join(' AND ');
+    const existe = this.db.prepare(`SELECT 1 FROM ${this.tabela} WHERE ${onde}`);
+    const apagarSubstituivel =
+      substituir && this.db.prepare(`DELETE FROM ${this.tabela} WHERE ${onde} AND (${substituir})`);
     const resultado = { inseridos: 0, atualizados: 0 };
 
     this.db.transaction(() => {
       for (const item of itens) {
         const valores = paraSqlite(this.preparar(item, this.db));
+        if (apagarSubstituivel) {
+          const chaves = Object.fromEntries(chave.map((c) => [c, valores[c]]));
+          if (apagarSubstituivel.run(chaves).changes) {
+            resultado.atualizados += 1;
+            this.inserir(valores);
+            continue;
+          }
+        }
         const campos = Object.keys(valores);
         const alterados = campos.filter((campo) => !chave.includes(campo));
         const noConflito = alterados.length
@@ -163,5 +175,14 @@ export class Repositorio {
       }
     })();
     return resultado;
+  }
+
+  inserir(valores) {
+    const campos = Object.keys(valores);
+    this.db
+      .prepare(
+        `INSERT INTO ${this.tabela} (${campos.join(', ')}) VALUES (${campos.map((c) => `@${c}`).join(', ')})`,
+      )
+      .run(valores);
   }
 }

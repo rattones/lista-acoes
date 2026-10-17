@@ -48,7 +48,7 @@ Os agentes (`agentes/.env`) precisam de duas API keys, geradas por um admin no a
 
 Cole as chaves no `agentes/.env` (`chmod 600 agentes/.env`) e recrie o serviço: `docker compose -f infra/docker-compose.<dev|prod>.yml up -d agentes`. O log deve mostrar `agentes agendados` com os horários.
 
-Primeira coleta de preços: ativos sem nenhum preço recebem 2 anos de histórico já na primeira rodada (19:30). Para não esperar, rode uma avulsa: `docker compose -f infra/docker-compose.prod.yml run --rm agentes node src/cli.js coletar-precos` (no DEV, `... run --rm agentes npm run coletar-precos -w agentes`). No DEV com os dados fictícios do `db:seed-dev`, limpe-os antes (`... exec backend npm run db:seed-dev -w backend -- --limpar`; tarefa 033), senão os ativos já têm preços e só os últimos 5 pregões são gravados por cima dos fictícios. Sem as chaves (ou com chave fora do formato), o container fica no ar sem coletar e registra o erro, que cita as variáveis, nunca os valores. Para trocar uma chave, gere outra, atualize o `.env`, recrie o serviço e revogue a antiga.
+Primeira coleta de preços: ativos sem nenhum preço recebem 2 anos de histórico já na primeira rodada (19:30). Para não esperar, rode uma avulsa: `docker compose -f infra/docker-compose.prod.yml run --rm agentes node src/cli.js coletar-precos` (no DEV, `... run --rm agentes npm run coletar-precos -w agentes`). No DEV com os dados fictícios do `db:seed-dev`, troque-os pelos coletados antes (veja [Trocar os dados fictícios pelos coletados](#trocar-os-dados-fictícios-pelos-coletados-dev)), senão os ativos já têm preços e só os últimos 5 pregões entram. Sem as chaves (ou com chave fora do formato), o container fica no ar sem coletar e registra o erro, que cita as variáveis, nunca os valores. Para trocar uma chave, gere outra, atualize o `.env`, recrie o serviço e revogue a antiga.
 
 ## Banco de dados (migrations)
 
@@ -69,7 +69,23 @@ npm run db:admin -w backend -- --email admin@exemplo.com --nome "Nome do Admin"
 
 A senha (mínimo de 10 caracteres) é pedida duas vezes, sem aparecer na tela. Sem terminal (ex.: script), ela é lida da primeira linha da entrada: `echo "$SENHA" | npm run db:admin -w backend -- ...`. Nunca passe a senha como argumento: ela ficaria no histórico do shell.
 
-**Dados fictícios (DEV):** enquanto os agentes coletores não existem, `npm run db:seed-dev -w backend` popula o banco para o dashboard: para cada ativo com `status = 'ativo'`, cerca de 15 meses de preços (dias úteis; cripto e stablecoin todos os dias), uma execução por dia útil nos últimos 90 dias com um sinal por ativo (indicadores calculados dos preços: retornos, MM20/50/200, IFR14, MACD, %B, máximas e mínimas de 52 semanas) e notícias por ativo e gerais. Os dados são sempre os mesmos (semente fixa por ativo) e ficam marcados: `fonte = 'seed'` em preços e notícias (URLs em `exemplo.invalid`) e `fonte_lista = 'seed'` nas execuções. Rodar de novo apaga e recria só eles; `-- --limpar` só apaga. Dados reais (outra fonte) não são tocados, e um dia com preço ou execução real fica com o real. Recusa com `NODE_ENV=production`. No container do DEV, depois de atualizar a imagem (`up --build`), ou direto: `docker compose -f infra/docker-compose.dev.yml exec backend node -r @babel/register src/database/cli.js seed-dev`.
+**Dados fictícios (DEV):** enquanto os agentes coletores não existem, `npm run db:seed-dev -w backend` popula o banco para o dashboard: para cada ativo com `status = 'ativo'`, cerca de 15 meses de preços (dias úteis; cripto e stablecoin todos os dias), uma execução por dia útil nos últimos 90 dias com um sinal por ativo (indicadores calculados dos preços: retornos, MM20/50/200, IFR14, MACD, %B, máximas e mínimas de 52 semanas) e notícias por ativo e gerais. Os dados são sempre os mesmos (semente fixa por ativo) e ficam marcados: `fonte = 'seed'` em preços e notícias (URLs em `exemplo.invalid`) e `fonte_lista = 'seed'` nas execuções. Rodar de novo apaga e recria só eles; `-- --limpar` só apaga. Dados reais (outra fonte) não são tocados, e um dia com preço ou execução real fica com o real. Recusa gerar com `NODE_ENV=production` (o `--limpar` vale em qualquer ambiente). No container do DEV, depois de atualizar a imagem (`up --build`), ou direto: `docker compose -f infra/docker-compose.dev.yml exec backend node -r @babel/register src/database/cli.js seed-dev`.
+
+Garantias (tarefa 033): um preço real enviado pelo lote para um dia ocupado por um preço fictício **substitui o registro inteiro** (nada é herdado do seed); `cli.js sem-seed` falha se houver qualquer registro fictício, e o `deploy.sh` o roda antes de trocar os containers de PROD.
+
+### Trocar os dados fictícios pelos coletados (DEV)
+
+Com as API keys no `agentes/.env` ([API keys dos agentes coletores](#api-keys-dos-agentes-coletores)):
+
+```sh
+C="docker compose -f infra/docker-compose.dev.yml"
+$C exec backend npm run db:seed-dev -w backend -- --limpar      # apaga preços, notícias, execuções e sinais fictícios
+$C run --rm agentes npm run coletar-precos -w agentes -- --historico   # 2 anos de preços reais
+$C run --rm agentes npm run coletar-noticias -w agentes          # notícias dos últimos 7 dias
+$C exec backend node -r @babel/register src/database/cli.js sem-seed   # confere: "Sem dados fictícios (seed) no banco."
+```
+
+Os dados reais não são tocados pelo `--limpar` (só o que tem `fonte`/`fonte_lista` = `seed`). Depois disso, os cards, a tabela e as notas do dashboard ficam vazios ("Ainda não há execuções do relatório") até o agente de decisão gravar execuções e sinais; o gráfico de preços e as notícias já mostram os dados coletados. Para voltar aos fictícios (testes manuais), rode o `db:seed-dev` de novo: ele não altera dados reais e, num dia com preço real, fica com o real.
 
 Nova migration: crie `backend/migrations/NNNN_descricao.sql` com o próximo número (4 dígitos). Cada arquivo roda em uma transação, então não use `BEGIN`/`COMMIT` nele, nem `PRAGMA foreign_keys` (não tem efeito dentro de transação). Migration aplicada não deve ser editada: corrija com uma nova.
 
@@ -244,7 +260,7 @@ Na VPS, como `deploy`, na raiz do repositório: `infra/scripts/deploy.sh`. Depoi
 2. `git pull --ff-only`.
 3. Marca as imagens em uso como `lista-acoes-backend:anterior`, `lista-acoes-frontend:anterior` e `lista-acoes-agentes:anterior`.
 4. Build. Se falhar, nada muda: os containers continuam no commit anterior.
-5. Migrations com a imagem nova, num container avulso, antes de trocar os containers. Se falharem, nada muda.
+5. Migrations com a imagem nova, num container avulso, antes de trocar os containers. Se falharem, nada muda. Em seguida, `cli.js sem-seed`: se o banco tiver dados fictícios do DEV, o deploy para sem trocar nada e mostra o comando que os apaga (`seed-dev --limpar`).
 6. `up -d --wait` (espera os healthchecks) e `GET https://api.listadecompras.net/v1/health` (10 tentativas, 6 s entre elas).
 7. Se o passo 6 falhar, **volta às imagens anteriores** e informa o commit anterior, para alinhar o código (`git checkout <commit>`).
 

@@ -1,5 +1,5 @@
 // Comandos do banco: npm run db:migrate | db:status | db:admin -w backend (na imagem de
-// PROD: node dist/database/cli.js migrate|status|admin|backup|verificar|seed-dev). Lê DB_ARQUIVO do ambiente ou do
+// PROD: node dist/database/cli.js migrate|status|admin|backup|verificar|seed-dev|sem-seed). Lê DB_ARQUIVO do ambiente ou do
 // backend/.env (padrão: data/monitor.db).
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { DB_ARQUIVO_PADRAO } from '../config/configuracao';
 import { criarAdmin } from './admin';
 import { fazerBackup, verificarBackup } from './backup';
-import { gerarSeed, limparSeed } from './seed-dev';
+import { contarSeed, gerarSeed, limparSeed } from './seed-dev';
 import { abrirConexao } from './conexao';
 import { aplicarMigracoes, PASTA_MIGRACOES, statusMigracoes } from './migracoes';
 
@@ -57,21 +57,34 @@ const comandos = {
     saida(`Backup gravado: ${destino} (integridade: ${integridade})`);
   },
 
-  // Dados fictícios para o dashboard no DEV (tarefa 032); nunca em produção.
+  // Dados fictícios para o dashboard no DEV (tarefa 032); nunca gerados em produção. O
+  // --limpar só apaga o que é marcado e vale em qualquer ambiente (tarefa 033).
   'seed-dev'({ db, saida, args = [], ambiente = process.env.NODE_ENV, hoje }) {
-    if (ambiente === 'production') {
-      throw new Error('O seed-dev não roda em produção (NODE_ENV=production).');
-    }
     if (args.includes('--limpar')) {
       limparSeed(db);
       saida('Dados fictícios apagados.');
       return;
+    }
+    if (ambiente === 'production') {
+      throw new Error('O seed-dev não roda em produção (NODE_ENV=production).');
     }
     const r = gerarSeed(db, hoje ? { hoje } : {});
     saida(
       `Dados fictícios gerados: ${r.ativos} ativo(s), ${r.precos} preço(s), ` +
         `${r.execucoes} execução(ões), ${r.sinais} sinal(is), ${r.noticias} notícia(s).`,
     );
+  },
+
+  // Falha se houver dados fictícios (tarefa 033): o deploy de PROD roda antes do up.
+  'sem-seed'({ db, saida }) {
+    const { precos, noticias, execucoes } = contarSeed(db);
+    if (precos + noticias + execucoes > 0) {
+      throw new Error(
+        `Há dados fictícios (seed) no banco: ${precos} preço(s), ${noticias} notícia(s), ` +
+          `${execucoes} execução(ões). Apague com: node dist/database/cli.js seed-dev --limpar`,
+      );
+    }
+    saida('Sem dados fictícios (seed) no banco.');
   },
 
   verificar({ saida, args = [] }) {

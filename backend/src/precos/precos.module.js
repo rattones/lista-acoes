@@ -40,6 +40,7 @@ const esquemas = {
 };
 
 // Cotações diárias (tabela precos_diarios). POST /lote: upsert por (ativo_id, data), para o agente.
+// Um preço fictício do DEV (fonte 'seed', tarefa 032) é substituído inteiro (tarefa 033).
 @EscoposCrud({ leitura: 'precos:read', escrita: 'precos:write' })
 @Controller('precos')
 @Dependencies(REPOSITORIO_PRECOS)
@@ -54,7 +55,9 @@ export class PrecosController extends ControladorCrud {
   @HttpCode(200)
   lote(@Body() corpo) {
     const { itens } = validar(esquemas.lote, corpo ?? {});
-    return this.repositorio.upsertLote(itens, ['ativo_id', 'data']);
+    return this.repositorio.upsertLote(itens, ['ativo_id', 'data'], {
+      substituir: "fonte = 'seed'",
+    });
   }
 }
 
