@@ -1,8 +1,26 @@
-import { Controller, Dependencies, Module, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Dependencies,
+  Get,
+  HttpCode,
+  Module,
+  NotFoundException,
+  Param,
+  Post,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import Joi from 'joi';
-import { EscoposCrud } from '../auth/decorators';
-import { ControladorCrud } from '../comum/crud/controlador-crud';
-import { data, esquemaAtualizacao, esquemaListagem, id, texto } from '../comum/crud/esquemas';
+import { Escopos, EscoposCrud, Papeis } from '../auth/decorators';
+import { ControladorCrud, validar } from '../comum/crud/controlador-crud';
+import {
+  data,
+  esquemaAtualizacao,
+  esquemaListagem,
+  esquemaParamId,
+  id,
+  texto,
+} from '../comum/crud/esquemas';
 import { Repositorio } from '../comum/crud/repositorio';
 import { CONEXAO_DB } from '../database/database.module';
 
@@ -93,12 +111,79 @@ function preencherCodigoAtivo(dados, db) {
   return { ...dados, ativo };
 }
 
+// Notícias que pesaram na nota (tarefa 040): até 50 por sinal.
+const esquemaNoticiasDoSinal = Joi.object({
+  noticia_ids: Joi.array().items(id()).max(50).required(),
+});
+
+const SQL_NOTICIAS_DO_SINAL = `
+  SELECT n.id, n.ativo_id, n.titulo, n.resumo, n.fonte, n.url, n.publicada_em, n.sentimento
+  FROM sinais_noticias sn
+  JOIN noticias n ON n.id = sn.noticia_id
+  WHERE sn.sinal_id = ? AND n.excluido_em IS NULL
+  ORDER BY COALESCE(n.publicada_em, n.coletada_em) DESC, n.id DESC`;
+
 @EscoposCrud({ leitura: 'sinais:read', escrita: 'sinais:write' })
 @Controller('sinais')
 @Dependencies(REPOSITORIO_SINAIS)
 export class SinaisController extends ControladorCrud {
   constructor(repositorio) {
     super(repositorio, esquemas);
+  }
+
+  get db() {
+    return this.repositorio.db;
+  }
+
+  sinalAtivo(params) {
+    const { id: sinalId } = validar(esquemaParamId, params);
+    if (!this.repositorio.obter(sinalId)) {
+      throw new NotFoundException({
+        erro: 'nao_encontrado',
+        mensagem: `Registro ${sinalId} não encontrado`,
+      });
+    }
+    return sinalId;
+  }
+
+  @Escopos('sinais:read')
+  @Get(':id/noticias')
+  noticias(@Param() params) {
+    return this.db.prepare(SQL_NOTICIAS_DO_SINAL).all(this.sinalAtivo(params));
+  }
+
+  // Substitui a lista do sinal (idempotente). Notícia inexistente ou excluída → 422, sem mudar
+  // nada. Escrita do agente de decisão (sinais:write) ou do admin.
+  @Papeis('admin')
+  @Escopos('sinais:write')
+  @Post(':id/noticias')
+  @HttpCode(200)
+  gravarNoticias(@Param() params, @Body() corpo) {
+    const sinalId = this.sinalAtivo(params);
+    const ids = [...new Set(validar(esquemaNoticiasDoSinal, corpo ?? {}).noticia_ids)];
+    const existentes = ids.length
+      ? this.db
+          .prepare(
+            `SELECT id FROM noticias WHERE excluido_em IS NULL AND id IN (${ids.map(() => '?').join(',')})`,
+          )
+          .pluck()
+          .all(...ids)
+      : [];
+    const faltam = ids.filter((n) => !existentes.includes(n));
+    if (faltam.length) {
+      throw new UnprocessableEntityException({
+        erro: 'entidade_invalida',
+        mensagem: `Notícia(s) inexistente(s) ou excluída(s): ${faltam.join(', ')}`,
+      });
+    }
+    const ligar = this.db.prepare(
+      'INSERT INTO sinais_noticias (sinal_id, noticia_id) VALUES (?, ?)',
+    );
+    this.db.transaction(() => {
+      this.db.prepare('DELETE FROM sinais_noticias WHERE sinal_id = ?').run(sinalId);
+      for (const noticiaId of ids) ligar.run(sinalId, noticiaId);
+    })();
+    return this.db.prepare(SQL_NOTICIAS_DO_SINAL).all(sinalId);
   }
 }
 
