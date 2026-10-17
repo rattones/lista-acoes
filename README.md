@@ -260,6 +260,15 @@ Monta o cadastro de um ativo a partir do link da página dele no Google Finance 
 - **Cliente HTTP** (`src/wrapper/cliente-http.js`): timeout por tentativa (`WRAPPER_TIMEOUT_MS`), até `WRAPPER_TENTATIVAS` tentativas com backoff exponencial em erro de rede, 429 e 5xx, cache em memória de `WRAPPER_CACHE_SEGUNDOS` para respostas 2xx e `User-Agent` configurável (`WRAPPER_USER_AGENT`).
 - **Testes:** usam respostas reais gravadas em `backend/test/fixtures/wrapper/` e não vão à rede.
 
+### Notícias de cada sinal
+
+As notícias que pesaram na nota de um sinal (tarefa 040), informadas pelo agente de decisão e usadas pela landing (034). Tabela `sinais_noticias` (apagar o sinal ou a notícia apaga a ligação).
+
+| Rota                           | O que faz                                                                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/sinais/:id/noticias`  | Notícias do sinal, sem as excluídas, mais recentes primeiro; qualquer usuário logado ou API key com `sinais:read`                                                                         |
+| `POST /v1/sinais/:id/noticias` | `{ noticia_ids: [...] }` (até 50) **substitui** a lista e devolve a nova; admin ou API key com `sinais:write`. Sinal inexistente ou excluído → 404; notícia inexistente ou excluída → 422 |
+
 ### Dashboard
 
 Leitura consolidada para o app (tarefa 025). Só usuários logados (admin e leitor); uma API key recebe 403. Registros excluídos logicamente ficam de fora.
