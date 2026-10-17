@@ -1,11 +1,13 @@
+import { serieDeIndicadores } from '@lista-acoes/comum/indicadores';
+import { TENDENCIA, avaliarLeituras, leituraGrafico } from '@lista-acoes/comum/nota';
+
 // Dados fictícios do DEV (tarefa 032): preços, execuções, sinais e notícias para o dashboard
 // (025) enquanto os agentes coletores não existem. Tudo é marcado (fonte/fonte_lista 'seed',
 // notícias em exemplo.invalid) para a 033 trocar pelos dados reais sem tocar neles.
 // Determinístico: cada ativo tem a sua semente (pelo código), e as datas partem de "hoje".
 //
-// Convenção dos indicadores (provisória, a confirmar com o agente de decisão): retornos e
-// distâncias em porcentagem (3,2 = 3,2%), IFR de 0 a 100, %B em fração (0 = banda inferior,
-// 1 = superior) e volume 5d/50d como razão.
+// Indicadores, leitura do gráfico e fórmula da nota vêm do comum/ (tarefa 039), com as unidades
+// do dashboard (comum/src/indicadores.js).
 
 const MARCA = 'seed';
 const EXECUCOES = 90;
@@ -21,10 +23,6 @@ const PERFIL = {
   cripto: { preco: 30000, volatilidade: 0.035, volume: 5e4 },
 };
 const TODOS_OS_DIAS = new Set(['cripto', 'stablecoin']);
-
-const PONTOS_NOTICIAS = { positivo: 2, misto_pos: 1, misto: 0, misto_neg: -1, negativo: -2 };
-const PONTOS_GRAFICO = { alta: 2, recuperacao: 1, lateral: 0, baixa: -2 };
-const TENDENCIA = { alta: 'Alta', recuperacao: 'Recuperação', lateral: 'Lateral', baixa: 'Baixa' };
 
 // ===== aleatoriedade com semente =====
 
@@ -72,107 +70,10 @@ function datasDeExecucao(hoje) {
   return datas;
 }
 
-// ===== indicadores =====
+// ===== leituras e nota =====
 
-const media = (valores) => valores.reduce((a, b) => a + b, 0) / valores.length;
-
-function mediasExponenciais(valores, periodo) {
-  const k = 2 / (periodo + 1);
-  const saida = [];
-  valores.forEach((v, i) => saida.push(i === 0 ? v : v * k + saida[i - 1] * (1 - k)));
-  return saida;
-}
-
-// IFR de Wilder (14), para toda a série.
-function ifr(fechamentos, periodo = 14) {
-  const saida = new Array(fechamentos.length).fill(null);
-  let ganho = 0;
-  let perda = 0;
-  for (let i = 1; i < fechamentos.length; i += 1) {
-    const variacao = fechamentos[i] - fechamentos[i - 1];
-    const g = Math.max(variacao, 0);
-    const p = Math.max(-variacao, 0);
-    if (i <= periodo) {
-      ganho += g / periodo;
-      perda += p / periodo;
-    } else {
-      ganho = (ganho * (periodo - 1) + g) / periodo;
-      perda = (perda * (periodo - 1) + p) / periodo;
-    }
-    if (i >= periodo) saida[i] = perda === 0 ? 100 : 100 - 100 / (1 + ganho / perda);
-  }
-  return saida;
-}
-
-function indicadores(serie) {
-  const c = serie.map((p) => p.fechamento);
-  const v = serie.map((p) => p.volume ?? 0);
-  const rsi = ifr(c);
-  const ema12 = mediasExponenciais(c, 12);
-  const ema26 = mediasExponenciais(c, 26);
-  const macd = c.map((_, i) => ema12[i] - ema26[i]);
-  const sinalMacd = mediasExponenciais(macd, 9);
-
-  return (i) => {
-    const mm = (n, j = i) => (j >= n - 1 ? media(c.slice(j - n + 1, j + 1)) : null);
-    const ret = (n) => (i >= n ? (c[i] / c[i - n] - 1) * 100 : null);
-    const distancia = (referencia) => (referencia ? (c[i] / referencia - 1) * 100 : null);
-    const subindo = (n) => {
-      const agora = mm(n);
-      const antes = mm(n, i - 5);
-      return agora === null || antes === null ? null : agora > antes ? 1 : 0;
-    };
-    const mm20 = mm(20);
-    const mm50 = mm(50);
-    const mm200 = mm(200);
-    let pctb = null;
-    if (mm20 !== null) {
-      const desvio = Math.sqrt(media(c.slice(i - 19, i + 1).map((x) => (x - mm20) ** 2)));
-      pctb = desvio === 0 ? 0.5 : (c[i] - (mm20 - 2 * desvio)) / (4 * desvio);
-    }
-    const janela = c.slice(Math.max(0, i - 251), i + 1);
-    const max52 = Math.max(...janela);
-    const min52 = Math.min(...janela);
-    const volume50 = i >= 49 ? media(v.slice(i - 49, i + 1)) : null;
-    return {
-      fechamento: c[i],
-      ret_5d: ret(5),
-      ret_1m: ret(21),
-      ret_3m: ret(63),
-      ret_6m: ret(126),
-      ret_1a: ret(252),
-      mm20,
-      mm50,
-      mm200,
-      dist_mm20: distancia(mm20),
-      dist_mm50: distancia(mm50),
-      dist_mm200: distancia(mm200),
-      mm50_subindo: subindo(50),
-      mm200_subindo: subindo(200),
-      rsi14: rsi[i],
-      macd: macd[i],
-      macd_sinal: sinalMacd[i],
-      macd_hist: macd[i] - sinalMacd[i],
-      bollinger_pctb: pctb,
-      max_52s: max52,
-      min_52s: min52,
-      dist_max_52s: distancia(max52),
-      dist_min_52s: distancia(min52),
-      volume_5d_50d: volume50 ? media(v.slice(i - 4, i + 1)) / volume50 : null,
-    };
-  };
-}
-
-// ===== leituras e nota (as regras do relatório, simplificadas) =====
-
-function leituraGrafico({ fechamento, mm20, mm50, mm50_subindo: subindo }) {
-  if (mm50 === null) return 'lateral';
-  if (fechamento > mm50 && subindo === 1) return 'alta';
-  if (fechamento < mm50 && subindo === 0) return 'baixa';
-  if (mm20 !== null && fechamento > mm20 && fechamento < mm50) return 'recuperacao';
-  return 'lateral';
-}
-
+// A leitura das notícias do seed é fictícia: retorno de 1 mês + ruído. A do gráfico e a fórmula
+// da nota são as de referência do comum/ (tarefa 039), as mesmas do agente de decisão.
 function leituraNoticias(ret1m, ruido) {
   const pontuacao = (ret1m ?? 0) / 8 + ruido * 0.6;
   if (pontuacao > 1) return 'positivo';
@@ -182,35 +83,13 @@ function leituraNoticias(ret1m, ruido) {
   return 'negativo';
 }
 
-function pontosExtremos({ rsi14, bollinger_pctb: pctb }) {
-  let pontos = 0;
-  if (rsi14 !== null && rsi14 > 70) pontos -= 0.5;
-  if (rsi14 !== null && rsi14 < 30) pontos += 0.5;
-  if (pctb !== null && pctb > 1) pontos -= 0.5;
-  if (pctb !== null && pctb < 0) pontos += 0.5;
-  return pontos;
-}
-
 function avaliar(ind, ruido) {
   const noticias = leituraNoticias(ind.ret_1m, ruido);
   const grafico = leituraGrafico(ind);
-  const pontosNoticias = PONTOS_NOTICIAS[noticias];
-  const pontosGrafico = PONTOS_GRAFICO[grafico];
-  const extremos = pontosExtremos(ind);
-  const soma = pontosNoticias + pontosGrafico + extremos;
-  const mesmoSentido =
-    (pontosNoticias > 0 && pontosGrafico > 0) ||
-    (pontosNoticias < 0 && pontosGrafico < 0) ||
-    (pontosNoticias === 0 && pontosGrafico === 0);
   return {
     noticias,
     grafico,
-    pontos_noticias: pontosNoticias,
-    pontos_grafico: pontosGrafico,
-    pontos_extremos: extremos,
-    soma,
-    nota: Math.min(5, Math.max(1, Math.round(3 + soma / 2))),
-    concordam: mesmoSentido ? 1 : 0,
+    ...avaliarLeituras({ noticias, grafico, ind }),
     tendencia: TENDENCIA[grafico],
   };
 }
@@ -408,7 +287,7 @@ export function gerarSeed(db, { hoje = hojeLocal() } = {}) {
         resumo.precos += inserirPreco.run({ ...preco, ativo_id: ativo.id, moeda }).changes;
       }
       const serie = serieDoBanco.all(ativo.id);
-      series.set(ativo.id, { serie, calcular: indicadores(serie), moeda });
+      series.set(ativo.id, { serie, calcular: serieDeIndicadores(serie), moeda });
     }
 
     for (const data of datas) {

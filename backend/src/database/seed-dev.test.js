@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { abrirConexao } from './conexao';
 import { executar } from './cli';
 import { aplicarMigracoes, PASTA_MIGRACOES } from './migracoes';
@@ -174,6 +175,34 @@ describe('seed do DEV', () => {
     }
     // Variedade: o dashboard precisa de notas diferentes.
     expect(new Set(sinais.map((s) => s.nota)).size).toBeGreaterThanOrEqual(4);
+  });
+
+  // Tarefa 039: indicadores e fórmula foram para o comum/ sem mudar nada do que o seed gera.
+  it('gera exatamente os mesmos dados de antes da 039 (impressão digital)', () => {
+    gerarSeed(db, { hoje: HOJE });
+    const digital = (linhas) => createHash('sha256').update(JSON.stringify(linhas)).digest('hex');
+    // Sem os ids gerados pelo banco: só o conteúdo de cada sinal.
+    const sinais = db
+      .prepare('SELECT * FROM sinais ORDER BY execucao_id, ativo_id')
+      .all()
+      .map((linha) => {
+        const conteudo = { ...linha };
+        delete conteudo.id;
+        delete conteudo.execucao_id;
+        return conteudo;
+      });
+    const precos = db
+      .prepare(
+        'SELECT ativo_id, data, abertura, maxima, minima, fechamento, volume FROM precos_diarios ORDER BY ativo_id, data',
+      )
+      .all();
+    expect([sinais.length, precos.length]).toEqual([540, 2239]);
+    expect(digital(sinais)).toBe(
+      '9d655fa3359da11993a67715b6bfd1eab6679d0e187f51c5c38434957dbeba22',
+    );
+    expect(digital(precos)).toBe(
+      'd7611ee21215e200ba1a1018c39ea62c2920b924a9ddc05625df8b441322aff9',
+    );
   });
 
   it('contarSeed conta só o que é marcado como seed', () => {
