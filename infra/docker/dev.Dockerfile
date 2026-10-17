@@ -20,4 +20,4 @@ RUN npm ci --ignore-scripts && npm rebuild @parcel/watcher unrs-resolver \
   && npm cache clean --force
 
 # Pasta do banco SQLite: recebe o volume nomeado (já com o dono node).
-RUN mkdir -p backend/data
+RUN mkdir -p backend/data /app/destaques

@@ -6,6 +6,13 @@
   --suave: #52606d;
   --primaria: #1565c0;
   --primaria-texto: #ffffff;
+  --alerta: #8a4b00;
+  --alerta-fundo: #fff4e5;
+  --nota-1: #c62828;
+  --nota-2: #ef6c00;
+  --nota-3: #f9a825;
+  --nota-4: #7cb342;
+  --nota-5: #2e7d32;
   color-scheme: light dark;
 }
 
@@ -18,6 +25,8 @@
     --suave: #9aa5b1;
     --primaria: #64b5f6;
     --primaria-texto: #0b1a2b;
+    --alerta: #ffcc80;
+    --alerta-fundo: #3a2a12;
   }
 }
 
@@ -245,5 +254,102 @@ p {
 }
 
 .tabela td {
+  color: var(--suave);
+}
+
+/* Destaques dos agentes (tarefa 034): trecho incluído por SSI, sem estilo inline (CSP). */
+.destaques-data {
+  color: var(--suave);
+}
+
+.destaques-data--antiga {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--alerta-fundo);
+  color: var(--alerta);
+  font-weight: 600;
+}
+
+.destaques-lista {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.destaques-ativo {
+  padding: 1rem;
+  border: 1px solid var(--borda);
+  border-radius: 0.75rem;
+  background: var(--superficie);
+}
+
+.destaques-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.destaques-codigo {
+  font-weight: 700;
+}
+
+.destaques-nome {
+  color: var(--suave);
+}
+
+.destaques-nota {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.destaques-nota--1 {
+  background: var(--nota-1);
+}
+
+.destaques-nota--2 {
+  background: var(--nota-2);
+}
+
+.destaques-nota--3 {
+  background: var(--nota-3);
+  color: #1f2933;
+}
+
+.destaques-nota--4 {
+  background: var(--nota-4);
+  color: #1f2933;
+}
+
+.destaques-nota--5 {
+  background: var(--nota-5);
+}
+
+.destaques-noticias {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.destaques-noticias li + li {
+  margin-top: 0.25rem;
+}
+
+.destaques-fonte {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--suave);
+}
+
+.destaques-aviso {
+  font-size: 0.875rem;
   color: var(--suave);
 }

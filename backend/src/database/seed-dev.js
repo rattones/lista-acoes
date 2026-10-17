@@ -323,6 +323,19 @@ export function gerarSeed(db, { hoje = hojeLocal() } = {}) {
     for (const noticia of gerarNoticias(ativos, datas)) {
       resumo.noticias += inserirNoticia.run(noticia).changes;
     }
+
+    // Notícias que "pesaram" em cada sinal fictício (034): até 3 do ativo nos 7 dias anteriores.
+    db.prepare(
+      `INSERT INTO sinais_noticias (sinal_id, noticia_id)
+       SELECT sinal_id, noticia_id FROM (
+         SELECT s.id AS sinal_id, n.id AS noticia_id,
+                ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY n.publicada_em DESC) AS ordem
+         FROM sinais s
+         JOIN execucoes e ON e.id = s.execucao_id AND e.fonte_lista = @marca
+         JOIN noticias n ON n.ativo_id = s.ativo_id AND n.fonte = @marca
+          AND date(n.publicada_em) BETWEEN date(e.data_execucao, '-7 days') AND e.data_execucao
+       ) WHERE ordem <= 3`,
+    ).run({ marca: MARCA });
   })();
 
   return resumo;

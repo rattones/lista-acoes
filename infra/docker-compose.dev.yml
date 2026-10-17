@@ -47,6 +47,8 @@ services:
       - ../backend/migrations:/app/backend/migrations:ro
       - ../backend/babel.config.js:/app/backend/babel.config.js:ro
       - dados:/app/backend/data
+      # Destaques da landing (tarefa 034): cli.js destaques /app/destaques grava aqui.
+      - destaques:/app/destaques
     healthcheck:
       test:
         - CMD
@@ -72,6 +74,8 @@ services:
       VITE_APP_URL: http://casaratton.ddns.net:8080
       VITE_LANDING_URL: http://casaratton.ddns.net:8081
       HOSTS_PERMITIDOS: casa-ratton.local,casaratton.ddns.net
+      # Pasta do destaques.html gerado no backend; o Vite da landing o inclui (tarefa 034).
+      DESTAQUES_DIR: /app/destaques
     volumes:
       - ../frontend/app:/app/frontend/app
       - ../frontend/landing:/app/frontend/landing
@@ -80,6 +84,7 @@ services:
       - ../frontend/vite.landing.config.js:/app/frontend/vite.landing.config.js:ro
       # A página de privacidade da landing é gerada do POLICY.md (tarefa 026).
       - ../POLICY.md:/app/POLICY.md:ro
+      - destaques:/app/destaques:ro
     depends_on:
       - backend
 
@@ -106,3 +111,5 @@ services:
 volumes:
   # Arquivo SQLite do DEV; sobrevive a `down` (só `down -v` apaga).
   dados:
+  # Trecho dos destaques da landing (tarefa 034).
+  destaques:

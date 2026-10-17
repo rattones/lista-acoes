@@ -1,17 +1,20 @@
 // Comandos do banco: npm run db:migrate | db:status | db:admin -w backend (na imagem de
-// PROD: node dist/database/cli.js migrate|status|admin|backup|verificar|seed-dev|sem-seed). Lê DB_ARQUIVO do ambiente ou do
+// PROD: node dist/database/cli.js migrate|status|admin|backup|verificar|seed-dev|sem-seed|destaques). Lê DB_ARQUIVO do ambiente ou do
 // backend/.env (padrão: data/monitor.db).
-import { existsSync } from 'node:fs';
+import { existsSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { DB_ARQUIVO_PADRAO } from '../config/configuracao';
 import { criarAdmin } from './admin';
 import { fazerBackup, verificarBackup } from './backup';
+import { gerarHtml, hojeEm, selecionarDestaques } from '../destaques/destaques';
 import { contarSeed, gerarSeed, limparSeed } from './seed-dev';
 import { abrirConexao } from './conexao';
 import { aplicarMigracoes, PASTA_MIGRACOES, statusMigracoes } from './migracoes';
 
 const USO_BACKUP = 'Uso: cli.js backup <arquivo de destino>';
+const USO_DESTAQUES = 'Uso: cli.js destaques <pasta> [--hoje AAAA-MM-DD]';
 const USO_VERIFICAR = 'Uso: cli.js verificar <arquivo de backup>';
 
 const USO_ADMIN =
@@ -72,6 +75,33 @@ const comandos = {
     saida(
       `Dados fictícios gerados: ${r.ativos} ativo(s), ${r.precos} preço(s), ` +
         `${r.execucoes} execução(ões), ${r.sinais} sinal(is), ${r.noticias} notícia(s).`,
+    );
+  },
+
+  // Destaques da landing (tarefa 034): grava <pasta>/destaques.html com a execução anterior a
+  // hoje (D-1). Escrita atômica: o Nginx nunca lê um arquivo pela metade.
+  destaques({ db, saida, args = [] }) {
+    const { positionals, values } = parseArgs({
+      args,
+      options: { hoje: { type: 'string' } },
+      allowPositionals: true,
+    });
+    const [pasta] = positionals;
+    if (!pasta) throw new Error(USO_DESTAQUES);
+    if (!existsSync(pasta) || !statSync(pasta).isDirectory()) {
+      throw new Error(`A pasta ${pasta} não existe. ${USO_DESTAQUES}`);
+    }
+    const hoje = values.hoje ?? hojeEm();
+    const destaques = selecionarDestaques(db, { hoje });
+    const destino = join(pasta, 'destaques.html');
+    const temporario = `${destino}.tmp`;
+    writeFileSync(temporario, gerarHtml(destaques, { hoje }));
+    renameSync(temporario, destino);
+    const [a, m, d] = (destaques?.execucao.data_execucao ?? hoje).split('-');
+    saida(
+      destaques
+        ? `Destaques gravados em ${destino}: ${destaques.ativos.length} ativo(s) da execução de ${d}/${m}/${a}.`
+        : `Destaques gravados em ${destino}: sem execução anterior a ${d}/${m}/${a} (arquivo vazio).`,
     );
   },
 

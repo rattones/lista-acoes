@@ -36,7 +36,8 @@ COPY --chown=node:node comum/src comum/src
 # Migrations do banco: node dist/database/cli.js migrate (tarefa 009).
 COPY --chown=node:node backend/migrations backend/migrations
 # Pasta do banco SQLite: recebe o volume persistente (já com o dono node).
-RUN mkdir -p backend/data
+# Destaques da landing (tarefa 034): pasta do volume compartilhado com o frontend.
+RUN mkdir -p backend/data /app/destaques
 
 WORKDIR /app/backend
 EXPOSE 3000

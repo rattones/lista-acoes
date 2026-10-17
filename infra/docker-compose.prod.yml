@@ -93,6 +93,8 @@ services:
       APP_URL: ${VITE_APP_URL:-https://app.listadecompras.net}
     volumes:
       - dados:/app/backend/data
+      # Destaques da landing (tarefa 034): infra/scripts/destaques.sh grava o trecho aqui.
+      - destaques:/app/destaques
     healthcheck:
       test:
         - CMD
@@ -115,6 +117,9 @@ services:
         VITE_LANDING_URL: ${VITE_LANDING_URL:-https://www.listadecompras.net}
     image: lista-acoes-frontend
     restart: unless-stopped
+    # Trecho dos destaques, incluído por SSI na landing (tarefa 034).
+    volumes:
+      - destaques:/usr/share/nginx/destaques:ro
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/']
       interval: 30s
@@ -150,3 +155,5 @@ volumes:
   letsencrypt:
   # Arquivos do desafio HTTP-01 (temporários).
   acme:
+  # Trecho dos destaques da landing (tarefa 034), refeito todo dia pelo destaques.sh.
+  destaques:
