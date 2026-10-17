@@ -42,6 +42,8 @@ services:
       APP_URL: http://casaratton.ddns.net:8080
     volumes:
       - ../backend/src:/app/backend/src
+      # Código compartilhado com os agentes (tarefa 035).
+      - ../comum/src:/app/comum/src:ro
       - ../backend/migrations:/app/backend/migrations:ro
       - ../backend/babel.config.js:/app/backend/babel.config.js:ro
       - dados:/app/backend/data
@@ -80,6 +82,26 @@ services:
       - ../POLICY.md:/app/POLICY.md:ro
     depends_on:
       - backend
+
+  # Agentes coletores (tarefa 035): agendador residente, sem porta publicada; chama a API pela
+  # rede interna. As API keys ficam no agentes/.env (veja agentes/.env-example). Sem ele, o
+  # container fica no ar sem coletar e repete o erro no log. Rodada avulsa:
+  #   docker compose -f infra/docker-compose.dev.yml run --rm agentes npm run coletar-precos -w agentes
+  agentes:
+    <<: *node
+    command: npm run iniciar -w agentes
+    env_file:
+      - path: ../agentes/.env
+        required: false
+    environment:
+      API_URL: http://backend:3000
+      TZ: America/Sao_Paulo
+    volumes:
+      - ../comum/src:/app/comum/src:ro
+      - ../agentes/src:/app/agentes/src:ro
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   # Arquivo SQLite do DEV; sobrevive a `down` (só `down -v` apaga).

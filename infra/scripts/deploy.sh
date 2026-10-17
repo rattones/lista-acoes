@@ -2,7 +2,7 @@
 # Deploy em PROD (tarefa 027). Uso, na VPS, na raiz do clone do repositório:
 #   infra/scripts/deploy.sh
 #
-# 1. Confere infra/.env e backend/.env e que não há alterações locais.
+# 1. Confere infra/.env, backend/.env e agentes/.env e que não há alterações locais.
 # 2. git pull --ff-only.
 # 3. Marca as imagens em uso como :anterior (para o rollback).
 # 4. Build das imagens novas. Se falhar, os containers em execução continuam.
@@ -23,11 +23,11 @@ SAUDE_URL="${DEPLOY_SAUDE_URL:-https://api.listadecompras.net/v1/health}"
 TENTATIVAS="${DEPLOY_TENTATIVAS:-10}"
 INTERVALO="${DEPLOY_INTERVALO:-6}"
 COMPOSE="docker compose -f infra/docker-compose.prod.yml"
-IMAGENS="lista-acoes-backend lista-acoes-frontend"
+IMAGENS="lista-acoes-backend lista-acoes-frontend lista-acoes-agentes"
 
 cd "$RAIZ"
 
-for arquivo in infra/.env backend/.env; do
+for arquivo in infra/.env backend/.env agentes/.env; do
   if [ ! -f "$arquivo" ]; then
     echo "Falta $arquivo (veja o INSTALL.md, \"Primeira subida na VPS\")." >&2
     exit 1

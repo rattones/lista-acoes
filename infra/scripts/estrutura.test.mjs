@@ -10,9 +10,9 @@ import { load as lerYaml, YAML11_SCHEMA } from 'js-yaml';
 const raiz = join(import.meta.dirname, '..', '..');
 const lerJson = (arquivo) => JSON.parse(readFileSync(join(raiz, arquivo), 'utf8'));
 
-test('package.json da raiz declara os workspaces backend e frontend', () => {
+test('package.json da raiz declara os workspaces comum, backend, frontend e agentes', () => {
   const pkg = lerJson('package.json');
-  assert.deepEqual(pkg.workspaces, ['backend', 'frontend']);
+  assert.deepEqual(pkg.workspaces, ['comum', 'backend', 'frontend', 'agentes']);
 });
 
 test('package.json da raiz tem os scripts agregados test, lint e dev', () => {
@@ -22,8 +22,16 @@ test('package.json da raiz tem os scripts agregados test, lint e dev', () => {
   }
 });
 
-test('pastas backend, frontend e infra existem', () => {
-  for (const pasta of ['backend', 'frontend', 'infra/docker', 'infra/nginx', 'infra/scripts']) {
+test('pastas comum, backend, frontend, agentes e infra existem', () => {
+  for (const pasta of [
+    'comum',
+    'backend',
+    'frontend',
+    'agentes',
+    'infra/docker',
+    'infra/nginx',
+    'infra/scripts',
+  ]) {
     assert.ok(existsSync(join(raiz, pasta)), `pasta "${pasta}" ausente`);
   }
 });
@@ -31,6 +39,15 @@ test('pastas backend, frontend e infra existem', () => {
 test('workspaces têm package.json próprio', () => {
   assert.equal(lerJson('backend/package.json').name, '@lista-acoes/backend');
   assert.equal(lerJson('frontend/package.json').name, '@lista-acoes/frontend');
+  assert.equal(lerJson('comum/package.json').name, '@lista-acoes/comum');
+  assert.equal(lerJson('agentes/package.json').name, '@lista-acoes/agentes');
+});
+
+// Agentes coletores (tarefa 035): o código comum é usado pela API e pelos agentes.
+test('backend e agentes dependem do workspace comum', () => {
+  for (const ws of ['backend', 'agentes']) {
+    assert.ok(lerJson(`${ws}/package.json`).dependencies?.['@lista-acoes/comum'], ws);
+  }
 });
 
 test('ESLint, Prettier e EditorConfig estão configurados na raiz', () => {
@@ -47,7 +64,12 @@ test('versão do Node fixada em .nvmrc e engines', () => {
 });
 
 test('.env-example existe na raiz e em cada serviço', () => {
-  for (const arquivo of ['.env-example', 'backend/.env-example', 'frontend/.env-example']) {
+  for (const arquivo of [
+    '.env-example',
+    'backend/.env-example',
+    'frontend/.env-example',
+    'agentes/.env-example',
+  ]) {
     assert.ok(existsSync(join(raiz, arquivo)), `"${arquivo}" ausente`);
   }
 });
@@ -66,6 +88,7 @@ test('.gitignore ignora node_modules, .env, bancos e builds, mas não .env-examp
     'backend/node_modules/x',
     '.env',
     'backend/.env',
+    'agentes/.env',
     'frontend/.env.local',
     'backend/data/monitor.db',
     'frontend/dist/index.html',
@@ -73,7 +96,12 @@ test('.gitignore ignora node_modules, .env, bancos e builds, mas não .env-examp
   ]) {
     assert.ok(ignorado(caminho), `"${caminho}" deveria ser ignorado`);
   }
-  for (const caminho of ['.env-example', 'backend/.env-example', 'frontend/.env-example']) {
+  for (const caminho of [
+    '.env-example',
+    'backend/.env-example',
+    'frontend/.env-example',
+    'agentes/.env-example',
+  ]) {
     assert.ok(!ignorado(caminho), `"${caminho}" não deveria ser ignorado`);
   }
 });
@@ -146,3 +174,38 @@ for (const arquivo of ['docker-compose.dev.yml', 'docker-compose.prod.yml']) {
     }
   });
 }
+
+// Serviço dos agentes coletores (tarefa 035): sem porta publicada, chaves no agentes/.env e a API
+// pela rede interna. Em PROD o .env é obrigatório; no DEV, sem ele o container só registra o erro
+// (configuração inválida não derruba o processo: veja agentes/src/main.js).
+for (const [arquivo, obrigatorio] of [
+  ['docker-compose.dev.yml', false],
+  ['docker-compose.prod.yml', true],
+]) {
+  test(`${arquivo}: serviço agentes com o agentes/.env, a API interna e sem portas`, () => {
+    const { agentes } = configCompose(arquivo).services;
+    assert.ok(agentes, 'serviço agentes ausente');
+    assert.equal(agentes.ports, undefined, 'agentes não publica portas');
+    assert.deepEqual(agentes.env_file, [{ path: '../agentes/.env', required: obrigatorio }]);
+    assert.equal(agentes.environment?.API_URL, 'http://backend:3000');
+    assert.equal(agentes.environment?.TZ, 'America/Sao_Paulo');
+    assert.ok(agentes.depends_on?.backend, 'agentes depende do backend');
+  });
+}
+
+for (const arquivo of ['backend.Dockerfile', 'frontend.Dockerfile', 'dev.Dockerfile']) {
+  test(`${arquivo} copia o package.json de todos os workspaces (npm ci)`, () => {
+    const dockerfile = lerTexto(join('infra', 'docker', arquivo));
+    for (const ws of lerJson('package.json').workspaces) {
+      assert.match(dockerfile, new RegExp(`COPY .*${ws}/package\\.json`), `${arquivo}: ${ws}`);
+    }
+  });
+}
+
+test('agentes.Dockerfile: sem root, só dependências de produção, fuso de São Paulo', () => {
+  const dockerfile = lerTexto('infra/docker/agentes.Dockerfile');
+  assert.match(dockerfile, /^USER node$/m);
+  assert.match(dockerfile, /npm ci -w agentes --omit=dev/);
+  assert.match(dockerfile, /TZ=America\/Sao_Paulo/);
+  assert.match(dockerfile, /COPY .*comum\/src/);
+});

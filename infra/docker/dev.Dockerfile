@@ -9,8 +9,10 @@ RUN chown node:node /app
 USER node
 
 COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node comum/package.json comum/
 COPY --chown=node:node backend/package.json backend/
 COPY --chown=node:node frontend/package.json frontend/
+COPY --chown=node:node agentes/package.json agentes/
 # --ignore-scripts: o better-sqlite3 traz o binário pronto (prebuilds/), mas o npm
 # tenta compilá-lo com node-gyp (sem Python na imagem slim). Os únicos scripts de
 # instalação necessários (frontend) rodam em seguida com npm rebuild.

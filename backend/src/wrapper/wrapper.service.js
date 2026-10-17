@@ -1,5 +1,12 @@
 import { Dependencies, Injectable, UnprocessableEntityException } from '@nestjs/common';
-import { ClienteHttp, fonteIndisponivel } from './cliente-http';
+import { ClienteHttp } from '@lista-acoes/comum/cliente-http';
+import {
+  urlBinanceKlines,
+  urlCoinGeckoBusca,
+  urlCoinGeckoPreco,
+  urlYahooChart,
+} from '@lista-acoes/comum/fontes';
+import { fonteIndisponivel } from './erros';
 import {
   classificarPar,
   daYahoo,
@@ -7,11 +14,7 @@ import {
   parDoYahoo,
   simboloYahoo,
   tickerYahooDoPar,
-  urlBinanceKlines,
-  urlCoinGeckoBusca,
-  urlCoinGeckoPreco,
   urlGoogle,
-  urlYahooChart,
 } from './urls';
 
 const YAHOO = 'Yahoo Finance';

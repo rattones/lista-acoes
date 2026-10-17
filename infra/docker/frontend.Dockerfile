@@ -6,8 +6,10 @@
 FROM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY comum/package.json comum/
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
+COPY agentes/package.json agentes/
 RUN npm ci -w frontend
 COPY frontend/ frontend/
 # A política de privacidade da landing é gerada do POLICY.md da raiz (tarefa 026).

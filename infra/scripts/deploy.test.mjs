@@ -49,8 +49,10 @@ beforeEach(() => {
   }
   mkdirSync(join(raiz, 'infra'), { recursive: true });
   mkdirSync(join(raiz, 'backend'));
+  mkdirSync(join(raiz, 'agentes'));
   writeFileSync(join(raiz, 'infra', '.env'), 'LETSENCRYPT_EMAIL=a@b.c\n');
   writeFileSync(join(raiz, 'backend', '.env'), 'JWT_SEGREDO=x\n');
+  writeFileSync(join(raiz, 'agentes', '.env'), 'API_URL=http://backend:3000\n');
 });
 
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -86,6 +88,7 @@ test('deploy completo: pull, marca as imagens atuais, build, migrations, up e sa
     'git pull --ff-only',
     'docker tag lista-acoes-backend:latest lista-acoes-backend:anterior',
     'docker tag lista-acoes-frontend:latest lista-acoes-frontend:anterior',
+    'docker tag lista-acoes-agentes:latest lista-acoes-agentes:anterior',
     ' build',
     'node dist/database/cli.js migrate',
     'up -d --no-build --wait',
@@ -112,8 +115,8 @@ test('as migrations rodam com a imagem nova, antes de trocar os containers', () 
   assert.match(migrate, / backend node dist\/database\/cli\.js migrate/);
 });
 
-test('sem infra/.env ou backend/.env, aborta antes de qualquer comando', () => {
-  for (const arquivo of [join('infra', '.env'), join('backend', '.env')]) {
+test('sem infra/.env, backend/.env ou agentes/.env, aborta antes de qualquer comando', () => {
+  for (const arquivo of [join('infra', '.env'), join('backend', '.env'), join('agentes', '.env')]) {
     rmSync(join(raiz, arquivo));
     const { status, chamadas, saida } = deploy();
     assert.notEqual(status, 0);

@@ -40,6 +40,8 @@ jobs:
       - run: npm ci
       - run: npm test -w backend
       - run: npm run build -w backend
+      # Código comum e agentes coletores (tarefa 035), também em Node.
+      - run: npm test -w comum -w agentes
 
   frontend:
     name: Testes e build do frontend
@@ -75,6 +77,12 @@ jobs:
             echo "SMTP_PASS=ci"
             echo "MAIL_FROM=ci@example.com"
           } > backend/.env
+      # API keys fictícias: no smoke os agentes só sobem e agendam, sem chamar a API.
+      - run: |
+          {
+            echo "API_KEY_PRECOS=la_00000000_$(openssl rand -hex 16)"
+            echo "API_KEY_NOTICIAS=la_00000001_$(openssl rand -hex 16)"
+          } > agentes/.env
       - run: docker compose -f infra/docker-compose.prod.yml build
       # Certificado autoassinado com os nomes de PROD (o real vem da Let's Encrypt na VPS).
       - run: docker compose -f infra/docker-compose.prod.yml --profile teste run --rm certificado-teste

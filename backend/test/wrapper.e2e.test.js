@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ClienteHttp } from '../src/wrapper/cliente-http';
+import { ClienteHttp } from '@lista-acoes/comum/cliente-http';
 import { criarAppTeste, idAtivo } from './utils/app-teste';
 
 const PASTA = join(__dirname, 'fixtures', 'wrapper');

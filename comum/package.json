@@ -1,0 +1,23 @@
+{
+  "name": "@lista-acoes/comum",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Código compartilhado pela API e pelos agentes (cliente HTTP e URLs das fontes)",
+  "type": "commonjs",
+  "exports": {
+    "./cliente-http": "./src/cliente-http.js",
+    "./fontes": "./src/fontes.js"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/test/**/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^30.5.2"
+  }
+}
