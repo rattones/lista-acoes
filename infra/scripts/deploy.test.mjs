@@ -23,6 +23,7 @@ case "$*" in
   "image inspect"*) [ -n "\${SEM_IMAGEM:-}" ] && exit 1; exit 0 ;;
   *" build"*) [ -n "\${FALHA_BUILD:-}" ] && exit 1 ;;
   *" run "*migrate*) [ -n "\${FALHA_MIGRATE:-}" ] && exit 1 ;;
+  *" run "*sem-seed*) [ -n "\${COM_SEED:-}" ] && exit 1 ;;
   # O primeiro up é o do deploy; os seguintes, o do rollback.
   *" up "*)
     if [ -e "$LOG.up" ]; then [ -n "\${FALHA_ROLLBACK:-}" ] && exit 1
@@ -91,6 +92,7 @@ test('deploy completo: pull, marca as imagens atuais, build, migrations, up e sa
     'docker tag lista-acoes-agentes:latest lista-acoes-agentes:anterior',
     ' build',
     'node dist/database/cli.js migrate',
+    'node dist/database/cli.js sem-seed',
     'up -d --no-build --wait',
     'curl',
   ].map((t) => indice(chamadas, t));
@@ -190,4 +192,24 @@ test('falha também no rollback é avisada', () => {
 test('DEPLOY_SAUDE_URL troca o endereço da verificação', () => {
   const { chamadas } = deploy({ DEPLOY_SAUDE_URL: 'https://api.teste/v1/health' });
   assert.ok(tem(chamadas, 'https://api.teste/v1/health'));
+});
+
+// Tarefa 033: dados fictícios (seed) nunca vão para PROD.
+test('banco com dados fictícios (seed) para o deploy antes de trocar os containers', () => {
+  const { status, chamadas, saida } = deploy({ COM_SEED: '1' });
+  assert.notEqual(status, 0);
+  assert.ok(tem(chamadas, 'migrate'));
+  assert.ok(!tem(chamadas, ' up '), 'não deveria subir os containers');
+  assert.ok(!tem(chamadas, ':anterior lista-acoes'), 'não há rollback: nada foi trocado');
+  assert.match(saida, /seed/);
+});
+
+test('a verificação do seed usa a imagem nova, num container avulso', () => {
+  const { chamadas } = deploy();
+  const verificacao = chamadas.find((c) => c.includes('sem-seed'));
+  assert.match(
+    verificacao,
+    /docker compose -f infra\/docker-compose\.prod\.yml run --rm --no-deps/,
+  );
+  assert.match(verificacao, / backend node dist\/database\/cli\.js sem-seed/);
 });

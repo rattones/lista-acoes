@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Alterado
 
+- Saída dos dados fictícios (tarefa 033): o `POST /v1/precos/lote` substitui inteiro um preço com `fonte = 'seed'` (sem herdar campos do fictício); novo `cli.js sem-seed`, que falha se houver registros fictícios e é rodado pelo `deploy.sh` antes de trocar os containers; `seed-dev --limpar` passa a valer também em produção (gerar continua proibido). INSTALL com o passo a passo da troca no DEV.
 - O cliente HTTP e as URLs das fontes do wrapper saem do backend para o `comum/` (tarefa 035); esgotadas as tentativas, o cliente lança `FonteIndisponivel`, que a API continua respondendo como 502 `fonte_indisponivel`.
 - `deploy.sh` exige o `agentes/.env` e inclui a imagem dos agentes no rollback; o CI roda os testes do `comum/` e dos agentes no job do backend e cria chaves fictícias para o smoke de PROD. O DEV precisa de `up --build` (novos workspaces) (tarefa 035).
 - `preparar-vps.sh` instala `rsync` e `cronie` e põe o `rrsync` no PATH; POLICY informa a frequência e a retenção das cópias de segurança (tarefa 028).

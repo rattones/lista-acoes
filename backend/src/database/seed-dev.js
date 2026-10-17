@@ -300,6 +300,16 @@ function proximoEvento(ativo, data) {
   return { proximo_evento: nome, proximo_evento_data: somarDias(data, faltam) };
 }
 
+// Registros marcados como fictícios, por tabela (os sinais vão com as execuções).
+export function contarSeed(db) {
+  const contar = (sql) => db.prepare(sql).pluck().get(MARCA);
+  return {
+    precos: contar('SELECT COUNT(*) FROM precos_diarios WHERE fonte = ?'),
+    noticias: contar('SELECT COUNT(*) FROM noticias WHERE fonte = ?'),
+    execucoes: contar('SELECT COUNT(*) FROM execucoes WHERE fonte_lista = ?'),
+  };
+}
+
 export function limparSeed(db) {
   db.transaction(() => {
     // Os sinais vão junto pelo ON DELETE CASCADE de execucoes.

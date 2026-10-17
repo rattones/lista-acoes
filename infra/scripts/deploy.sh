@@ -8,6 +8,7 @@
 # 4. Build das imagens novas. Se falhar, os containers em execução continuam.
 # 5. Migrations com a imagem nova, num container avulso, antes de trocar os containers.
 #    As migrations só avançam: o rollback volta o código, não o schema.
+# 5b. Recusa seguir se o banco tiver dados fictícios do DEV (seed, tarefa 033).
 # 6. Sobe os containers novos (--wait: espera os healthchecks).
 # 7. Confere a saúde da API em HTTPS. Se 6 ou 7 falharem, volta às imagens anteriores.
 #
@@ -68,6 +69,13 @@ fi
 echo "==> Migrations"
 if ! $COMPOSE run --rm --no-deps backend node dist/database/cli.js migrate; then
   echo "Migrations falharam: os containers em execução continuam com o commit $COMMIT_ANTERIOR." >&2
+  exit 1
+fi
+
+echo "==> Sem dados fictícios"
+if ! $COMPOSE run --rm --no-deps backend node dist/database/cli.js sem-seed; then
+  echo "O banco de PROD tem dados fictícios (seed): os containers continuam com o commit $COMMIT_ANTERIOR." >&2
+  echo "Apague com: $COMPOSE run --rm --no-deps backend node dist/database/cli.js seed-dev --limpar" >&2
   exit 1
 fi
 
