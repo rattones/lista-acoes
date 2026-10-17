@@ -20,7 +20,7 @@ describe('tela de login', () => {
       email: 'leitor@teste.com',
       senha: 'senha-forte-123',
     });
-    expect(router.currentRoute.value.name).toBe('inicio');
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('inicio'));
     expect(wrapper.find('.v-navigation-drawer').exists()).toBe(true);
   });
 
