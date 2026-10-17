@@ -56,6 +56,7 @@ describe('schema inicial', () => {
       'precos_diarios',
       'schema_migrations',
       'sinais',
+      'sinais_noticias',
       'usuarios',
     ]);
     expect(objetos('view')).toEqual([
@@ -240,6 +241,36 @@ describe('schema inicial', () => {
   });
 
   // Exclusão permanente de conta (tarefa 017): apagar o usuário apaga tudo o que é dele.
+  // Tarefa 040: notícias que pesaram na nota de cada sinal.
+  it('sinais_noticias: PK composta e CASCADE ao apagar o sinal ou a notícia', () => {
+    const ativo = db.prepare("SELECT id FROM ativos WHERE ativo = 'PETR4'").pluck().get();
+    const execucao = db
+      .prepare("INSERT INTO execucoes (data_execucao, fonte_lista) VALUES ('2026-10-13', 'teste')")
+      .run().lastInsertRowid;
+    const sinal = db
+      .prepare(
+        `INSERT INTO sinais (execucao_id, ativo_id, ativo, ticker_yahoo, data_preco, noticias, grafico,
+           pontos_noticias, pontos_grafico, pontos_extremos, soma, nota, concordam)
+         VALUES (?, ?, 'PETR4', 'PETR4.SA', '2026-10-13', 'positivo', 'alta', 2, 2, 0, 4, 5, 1)`,
+      )
+      .run(execucao, ativo).lastInsertRowid;
+    const noticia = (url) =>
+      db.prepare("INSERT INTO noticias (titulo, url) VALUES ('n', ?)").run(url).lastInsertRowid;
+    const n1 = noticia('https://n.teste/1');
+    const n2 = noticia('https://n.teste/2');
+    const ligar = db.prepare('INSERT INTO sinais_noticias (sinal_id, noticia_id) VALUES (?, ?)');
+    ligar.run(sinal, n1);
+    ligar.run(sinal, n2);
+    expect(() => ligar.run(sinal, n1)).toThrow(/UNIQUE|PRIMARY/);
+    expect(() => ligar.run(sinal, 9999)).toThrow(/FOREIGN KEY/);
+
+    const contar = () => db.prepare('SELECT COUNT(*) FROM sinais_noticias').pluck().get();
+    db.prepare('DELETE FROM noticias WHERE id = ?').run(n1);
+    expect(contar()).toBe(1);
+    db.prepare('DELETE FROM sinais WHERE id = ?').run(sinal);
+    expect(contar()).toBe(0);
+  });
+
   it('toda chave estrangeira para usuarios é ON DELETE CASCADE', () => {
     const tabelas = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
     const fks = tabelas.flatMap((tabela) =>
