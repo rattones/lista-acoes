@@ -18,7 +18,31 @@ describe('lerConfiguracao', () => {
           'Mozilla/5.0 (compatible; lista-acoes-agentes/1.0; +https://www.listadecompras.net)',
         timeoutMs: 15000,
       },
+      feedsGerais: [
+        { nome: 'InfoMoney', url: 'https://www.infomoney.com.br/feed/' },
+        { nome: 'Valor Econômico', url: 'https://pox.globo.com/rss/valor/' },
+        { nome: 'Money Times', url: 'https://www.moneytimes.com.br/feed/' },
+        { nome: 'CNBC', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html' },
+        {
+          nome: 'MarketWatch',
+          url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories',
+        },
+      ],
     });
+  });
+
+  it('FEEDS_GERAIS troca a lista de feeds gerais (Nome|url;Nome|url; vazio = nenhum)', () => {
+    expect(
+      lerConfiguracao({ ...ENV, FEEDS_GERAIS: ' A | https://a.teste/rss ;B|http://b.teste/feed;' })
+        .feedsGerais,
+    ).toEqual([
+      { nome: 'A', url: 'https://a.teste/rss' },
+      { nome: 'B', url: 'http://b.teste/feed' },
+    ]);
+    expect(lerConfiguracao({ ...ENV, FEEDS_GERAIS: 'nenhum' }).feedsGerais).toEqual([]);
+    for (const valor of ['sem-url', 'A|ftp://a.teste', '|https://a.teste']) {
+      expect(() => lerConfiguracao({ ...ENV, FEEDS_GERAIS: valor })).toThrow('FEEDS_GERAIS');
+    }
   });
 
   it('aceita horários, fuso e nível de log do ambiente', () => {

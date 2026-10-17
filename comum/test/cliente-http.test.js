@@ -121,4 +121,31 @@ describe('ClienteHttp', () => {
     await http.getJson(URL_TESTE, { fonte: 'Fonte' });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  describe('getTexto (RSS, tarefa 037)', () => {
+    const xml = (texto, status = 200) =>
+      new Response(texto, { status, headers: { 'content-type': 'application/rss+xml' } });
+
+    it('devolve o corpo como texto, pedindo XML, com as mesmas tentativas', async () => {
+      const respostas = [() => xml('', 503), () => xml('<rss></rss>')];
+      const fetch = jest.fn(() => respostas.shift()());
+      expect(await cliente(fetch).getTexto(URL_TESTE, { fonte: 'Feed' })).toEqual({
+        status: 200,
+        corpo: '<rss></rss>',
+      });
+      expect(fetch).toHaveBeenCalledTimes(2);
+      const { headers } = fetch.mock.calls[0][1];
+      expect(new Headers(headers).get('accept')).toMatch(/xml/);
+      expect(new Headers(headers).get('user-agent')).toBe('agente-de-teste/1.0');
+    });
+
+    it('esgotadas as tentativas, FonteIndisponivel; 4xx volta ao chamador', async () => {
+      await expect(
+        cliente(jest.fn(async () => xml('', 500))).getTexto(URL_TESTE, { fonte: 'Feed' }),
+      ).rejects.toBeInstanceOf(FonteIndisponivel);
+      expect(
+        await cliente(jest.fn(async () => xml('não', 404))).getTexto(URL_TESTE, { fonte: 'Feed' }),
+      ).toEqual({ status: 404, corpo: 'não' });
+    });
+  });
 });

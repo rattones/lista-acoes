@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:metadata="http://search.cnbc.com/rss/2.0/modules/siteContentMetadata" version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <atom:link rel="self" type="application/rss+xml" href="https://www.cnbc.com/id/100003114/device/rss/rss.html"/>
+    <language>en-us</language>
+    <ttl>60</ttl>
+    <title>US Top News and Analysis</title>
+    <feed_asset>
+      <id>100003114</id>
+      <type>franchise</type>
+      <subtype>section</subtype>
+      <seo>https://www.cnbc.com/us-top-news-and-analysis/</seo>
+    </feed_asset>
+    <lastBuildDate>Sat, 17 Oct 2026 15:50 GMT</lastBuildDate>
+    <pubDate>Sat, 17 Oct 2026 15:50 GMT</pubDate>
+    <link>https://www.cnbc.com/us-top-news-and-analysis/</link>
+    <description><![CDATA[CNBC is the world leader in business news and real-time financial market coverage. Find fast, actionable information.]]></description>
+    <item>
+      <link>https://www.cnbc.com/2026/10/17/trump-waives-russia-related-sanctions-tariffs-before-they-take-effect-.html</link>
+      <guid isPermaLink="false">108423611</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108423611</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>Trump waives broad new Russia sanctions and tariffs under Graham Act, citing national interest</title>
+      <description><![CDATA[Trump signed the Graham Bill, which targeted Russia over its invasion of Ukraine, into law in September.]]></description>
+      <pubDate>Sat, 17 Oct 2026 10:20:44 GMT</pubDate>
+    </item><item>
+      <link>https://www.cnbc.com/2026/10/17/bending-spoons-wants-to-revive-software-castoffs-berkshire-investing.html</link>
+      <guid isPermaLink="false">108409498</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108409498</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>Software’s new consolidator gets big vote of confidence from Berkshire</title>
+      <description><![CDATA[Less than four months into life as a public company, Bending Spoons got a big vote of confidence this week from Berkshire Hathaway.]]></description>
+      <pubDate>Sat, 17 Oct 2026 15:11:30 GMT</pubDate>
+    </item><item>
+      <link>https://www.cnbc.com/2026/10/17/berkshire-rally-to-highest-since-buffett-announcement.html</link>
+      <guid isPermaLink="false">108423147</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108423147</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>Berkshire shares buck market sell-off, rally to highest since Buffett said he would step down as CEO</title>
+      <description><![CDATA[Berkshire Hathaway shares are at their highest level since Warren Buffett told shareholders at the May 2025 annual meeting he planned to step down as CEO at the end of that year.]]></description>
+      <pubDate>Sat, 17 Oct 2026 12:46:21 GMT</pubDate>
+    </item><item>
+      <link>https://www.cnbc.com/2026/10/16/midterm-election-fundraising-elon-musk.html</link>
+      <guid isPermaLink="false">108420445</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108420445</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>5 midterm money takeaways: Democrats have candidate cash. Republicans have Elon Musk</title>
+      <description><![CDATA[Democrats outraise Republicans in key Congress races as Elon Musk funds Ken Paxton in Texas and GOP groups aligned with Trump.]]></description>
+      <pubDate>Fri, 16 Oct 2026 21:49:13 GMT</pubDate>
+    </item><item>
+      <link>https://www.cnbc.com/2026/10/17/dead-money-for-a-decade-hedge-fund-approach-that-may-trump-bonds.html</link>
+      <guid isPermaLink="false">108420660</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108420660</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>&apos;Dead money’ for a decade: Why this hedge fund approach may deliver an advantage over bonds </title>
+      <description><![CDATA[Investors may want to rethink their bond allocation and opt for managed futures exposure.]]></description>
+      <pubDate>Sat, 17 Oct 2026 15:00:01 GMT</pubDate>
+    </item><item>
+      <link>https://www.cnbc.com/2026/10/17/trump-student-loans-bankruptcy.html</link>
+      <guid isPermaLink="false">108366176</guid>
+      <metadata:type>cnbcnewsstory</metadata:type>
+      <metadata:id>108366176</metadata:id>
+      <metadata:sponsored>false</metadata:sponsored>
+      <title>Trump&apos;s student loan overhaul could lead to more bankruptcy filings, former judge says</title>
+      <description><![CDATA[After nearly three decades as a bankruptcy judge, Sarah Sharer Curley writes about the legal process in her new book, "The Price of Forgiveness."]]></description>
+      <pubDate>Sat, 17 Oct 2026 13:30:01 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

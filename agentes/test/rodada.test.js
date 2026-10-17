@@ -25,7 +25,14 @@ describe('executarRodada', () => {
     // Fontes externas: o User-Agent e o timeout da configuração, sem cache entre rodadas.
     expect(criarHttp).toHaveBeenCalledWith(config.fontes);
     expect(executar).toHaveBeenCalledWith(
-      { api: { api: true }, http: { http: true }, log, agora: Date.now },
+      {
+        api: { api: true },
+        http: { http: true },
+        log,
+        agora: Date.now,
+        fuso: 'America/Sao_Paulo',
+        feedsGerais: config.feedsGerais,
+      },
       { ativo: 'PETR4' },
     );
     expect(resultado).toEqual({ ok: true, resumo: { ativos: 3, gravados: 15, falhas: 0 } });

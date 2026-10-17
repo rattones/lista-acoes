@@ -72,6 +72,17 @@ describe('criarClienteApi', () => {
     expect(fetch.mock.calls[0][0]).toBe('http://backend:3000/v1/precos/lote');
   });
 
+  it('enviarLote aceita um tamanho menor de lote (notícias: corpo de até 1 MB)', async () => {
+    const tamanhos = [];
+    const fetch = jest.fn(async (url, opcoes) => {
+      tamanhos.push(JSON.parse(opcoes.body).itens.length);
+      return json({ inseridos: 1, atualizados: 0 });
+    });
+    const itens = Array.from({ length: 5 }, (_, i) => ({ i }));
+    await criar(fetch).enviarLote('/v1/noticias/lote', itens, { tamanho: 2 });
+    expect(tamanhos).toEqual([2, 2, 1]);
+  });
+
   it('enviarLote sem itens não chama a API', async () => {
     const fetch = jest.fn();
     expect(await criar(fetch).enviarLote('/v1/precos/lote', [])).toEqual({
