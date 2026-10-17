@@ -1,7 +1,7 @@
 import { abrirConexao } from './conexao';
 import { executar } from './cli';
 import { aplicarMigracoes, PASTA_MIGRACOES } from './migracoes';
-import { gerarSeed, limparSeed } from './seed-dev';
+import { contarSeed, gerarSeed, limparSeed } from './seed-dev';
 
 // Dados fictícios do DEV (tarefa 032), para o dashboard (025) antes dos agentes coletores.
 // Datas a partir de um "hoje" fixo: sempre os mesmos dados.
@@ -176,6 +176,17 @@ describe('seed do DEV', () => {
     expect(new Set(sinais.map((s) => s.nota)).size).toBeGreaterThanOrEqual(4);
   });
 
+  it('contarSeed conta só o que é marcado como seed', () => {
+    expect(contarSeed(db)).toEqual({ precos: 0, noticias: 0, execucoes: 0 });
+    const ativo = db.prepare("SELECT id FROM ativos WHERE ativo = 'PETR4'").pluck().get();
+    db.prepare(
+      "INSERT INTO precos_diarios (ativo_id, data, fechamento, fonte) VALUES (?, '2026-10-01', 1, 'yahoo')",
+    ).run(ativo);
+    expect(contarSeed(db).precos).toBe(0);
+    gerarSeed(db, { hoje: HOJE });
+    expect(contarSeed(db).execucoes).toBe(90);
+  });
+
   it('não apaga nem altera dados reais (fonte diferente de seed), nem com limpar', () => {
     const petr4 = db.prepare("SELECT id FROM ativos WHERE ativo = 'PETR4'").get().id;
     db.prepare(
@@ -232,15 +243,35 @@ describe('seed do DEV', () => {
       expect(contar('SELECT COUNT(*) n FROM sinais')).toBe(0);
     });
 
-    it('com NODE_ENV=production, falha sem gravar nada', async () => {
+    it('com NODE_ENV=production, não gera nada', async () => {
       await expect(
         executar('seed-dev', { db, saida, args: [], ambiente: 'production', hoje: HOJE }),
       ).rejects.toThrow(/produção/);
       expect(contar('SELECT COUNT(*) n FROM precos_diarios')).toBe(0);
       expect(contar('SELECT COUNT(*) n FROM execucoes')).toBe(0);
-      await expect(
-        executar('seed-dev', { db, saida, args: ['--limpar'], ambiente: 'production' }),
-      ).rejects.toThrow(/produção/);
+    });
+
+    // Tarefa 033: --limpar só apaga o que é marcado, e é a saída se o deploy achar dados seed.
+    it('--limpar funciona também em produção', async () => {
+      gerarSeed(db, { hoje: HOJE });
+      await executar('seed-dev', { db, saida, args: ['--limpar'], ambiente: 'production' });
+      expect(linhas).toEqual(['Dados fictícios apagados.']);
+      expect(contarSeed(db)).toEqual({ precos: 0, noticias: 0, execucoes: 0 });
+    });
+
+    it('sem-seed: passa sem dados fictícios e falha com a contagem se houver', async () => {
+      await executar('sem-seed', { db, saida });
+      expect(linhas).toEqual(['Sem dados fictícios (seed) no banco.']);
+
+      gerarSeed(db, { hoje: HOJE });
+      const { precos, noticias, execucoes } = contarSeed(db);
+      expect(precos).toBeGreaterThan(0);
+      expect(execucoes).toBe(90);
+      const erro = await executar('sem-seed', { db, saida }).catch((e) => e);
+      expect(erro.message).toContain(`${precos} preço(s)`);
+      expect(erro.message).toContain(`${noticias} notícia(s)`);
+      expect(erro.message).toContain('90 execução(ões)');
+      expect(erro.message).toMatch(/seed-dev --limpar/);
     });
   });
 });

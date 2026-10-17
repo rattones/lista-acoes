@@ -90,6 +90,58 @@ describe('/v1/precos (regras e lote)', () => {
     });
   });
 
+  // Saída dos dados fictícios (tarefa 033): um preço real substitui o do seed por inteiro.
+  it('lote sobre um preço fictício (fonte seed) substitui o registro inteiro', async () => {
+    const { ativo_id: ativoId, data } = preco(ctx, 0);
+    ctx.db
+      .prepare(
+        `INSERT INTO precos_diarios (ativo_id, data, abertura, maxima, minima, fechamento, volume, moeda, fonte)
+         VALUES (?, ?, 10, 11, 9, 10.5, 123, 'BRL', 'seed')`,
+      )
+      .run(ativoId, data);
+    const res = await ctx
+      .http()
+      .post('/v1/precos/lote')
+      .send({ itens: [{ ativo_id: ativoId, data, fechamento: 38.5, fonte: 'yahoo' }] });
+    expect(res.body).toEqual({ inseridos: 0, atualizados: 1 });
+    expect(
+      ctx.db
+        .prepare(
+          'SELECT abertura, maxima, minima, fechamento, volume, moeda, fonte, excluido_em FROM precos_diarios',
+        )
+        .all(),
+    ).toEqual([
+      {
+        abertura: null,
+        maxima: null,
+        minima: null,
+        fechamento: 38.5,
+        volume: null,
+        moeda: null,
+        fonte: 'yahoo',
+        excluido_em: null,
+      },
+    ]);
+  });
+
+  it('lote sobre um preço fictício sem fonte no item também não herda nada do seed', async () => {
+    const { ativo_id: ativoId, data } = preco(ctx, 0);
+    ctx.db
+      .prepare(
+        `INSERT INTO precos_diarios (ativo_id, data, abertura, fechamento, fonte) VALUES (?, ?, 10, 10.5, 'seed')`,
+      )
+      .run(ativoId, data);
+    await ctx
+      .http()
+      .post('/v1/precos/lote')
+      .send({ itens: [{ ativo_id: ativoId, data, fechamento: 40 }] });
+    expect(ctx.db.prepare('SELECT abertura, fechamento, fonte FROM precos_diarios').get()).toEqual({
+      abertura: null,
+      fechamento: 40,
+      fonte: null,
+    });
+  });
+
   it('lote com item inválido → 400 indicando o item, sem gravar nada', async () => {
     const res = await ctx
       .http()
