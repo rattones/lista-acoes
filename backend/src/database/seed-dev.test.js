@@ -205,6 +205,32 @@ describe('seed do DEV', () => {
     );
   });
 
+  // Tarefa 034: os sinais fictícios ficam ligados a notícias do ativo, para os destaques da landing.
+  it('liga cada sinal a até 3 notícias fictícias do ativo dos 7 dias anteriores', () => {
+    gerarSeed(db, { hoje: HOJE });
+    const ligacoes = db
+      .prepare(
+        `SELECT s.ativo_id AS sinal_ativo, n.ativo_id AS noticia_ativo, e.data_execucao,
+                date(n.publicada_em) AS publicada, n.fonte
+         FROM sinais_noticias sn
+         JOIN sinais s ON s.id = sn.sinal_id
+         JOIN execucoes e ON e.id = s.execucao_id
+         JOIN noticias n ON n.id = sn.noticia_id`,
+      )
+      .all();
+    expect(ligacoes.length).toBeGreaterThan(0);
+    for (const l of ligacoes) {
+      expect(l.noticia_ativo).toBe(l.sinal_ativo);
+      expect(l.fonte).toBe('seed');
+      expect(l.publicada <= l.data_execucao).toBe(true);
+    }
+    const porSinal = db
+      .prepare('SELECT MAX(n) FROM (SELECT COUNT(*) n FROM sinais_noticias GROUP BY sinal_id)')
+      .pluck()
+      .get();
+    expect(porSinal).toBeLessThanOrEqual(3);
+  });
+
   it('contarSeed conta só o que é marcado como seed', () => {
     expect(contarSeed(db)).toEqual({ precos: 0, noticias: 0, execucoes: 0 });
     const ativo = db.prepare("SELECT id FROM ativos WHERE ativo = 'PETR4'").pluck().get();

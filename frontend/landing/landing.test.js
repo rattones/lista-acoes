@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from 'vite';
 import { politicaEmHtml } from './politica.js';
+import { INCLUSAO_DESTAQUES, pluginDestaques } from './destaques.js';
 
 // Página ausente vira documento vazio: cada teste falha por conta própria.
 const ler = (arquivo) => {
@@ -69,6 +70,70 @@ describe('landing page (fonte)', () => {
       expect(pagina.querySelectorAll('script')).toHaveLength(0);
       expect(pagina.querySelectorAll('style, [style]')).toHaveLength(0);
     }
+  });
+});
+
+// Destaques dos agentes (tarefa 034): trecho gerado pela API e incluído por SSI no Nginx.
+describe('destaques dos agentes', () => {
+  const fonte = ler('index.html');
+
+  it('a página tem o ponto de inclusão entre "Como funciona" e o acesso', () => {
+    expect(INCLUSAO_DESTAQUES).toBe('<!--# include virtual="/destaques/destaques.html" -->');
+    const posicao = fonte.indexOf(INCLUSAO_DESTAQUES);
+    expect(posicao).toBeGreaterThan(fonte.indexOf('id="como-funciona"'));
+    expect(posicao).toBeLessThan(fonte.indexOf('class="acesso"'));
+  });
+
+  it('o CSS tem as classes do trecho (sem estilo inline: CSP do www)', () => {
+    const css = ler('estilo.css');
+    for (const classe of [
+      '.destaques',
+      '.destaques-data--antiga',
+      '.destaques-lista',
+      '.destaques-ativo',
+      '.destaques-nota',
+      '.destaques-nota--1',
+      '.destaques-nota--5',
+      '.destaques-noticias',
+      '.destaques-fonte',
+      '.destaques-aviso',
+    ]) {
+      expect(css).toContain(classe);
+    }
+  });
+
+  describe('plugin do Vite (DEV)', () => {
+    let pasta;
+    beforeAll(() => {
+      pasta = mkdtempSync(join(tmpdir(), 'destaques-'));
+    });
+    afterAll(() => rmSync(pasta, { recursive: true, force: true }));
+
+    const html = `<main>${INCLUSAO_DESTAQUES}</main>`;
+    const transformar = (plugin, nome = 'index.html') =>
+      plugin.transformIndexHtml(html, { filename: join('/x', nome) });
+
+    it('só roda no servidor de desenvolvimento (no build, o Nginx inclui)', () => {
+      expect(pluginDestaques({ pasta }).apply).toBe('serve');
+    });
+
+    it('troca o ponto de inclusão pelo trecho, quando existe', () => {
+      writeFileSync(join(pasta, 'destaques.html'), '<section id="destaques">X</section>');
+      expect(transformar(pluginDestaques({ pasta }))).toBe(
+        '<main><section id="destaques">X</section></main>',
+      );
+    });
+
+    it('sem arquivo ou sem pasta configurada, a página fica sem a seção', () => {
+      expect(transformar(pluginDestaques({ pasta: join(pasta, 'nao-existe') }))).toBe(
+        '<main></main>',
+      );
+      expect(transformar(pluginDestaques({}))).toBe('<main></main>');
+    });
+
+    it('não mexe na página de privacidade', () => {
+      expect(transformar(pluginDestaques({ pasta }), 'privacidade.html')).toBe(html);
+    });
   });
 });
 
@@ -138,6 +203,10 @@ describe('build da landing', () => {
     const pagina = analisar(arquivo('privacidade.html'));
     expect(pagina.querySelector('main').textContent).toContain('LGPD');
     expect(pagina.querySelector('main h2')).not.toBeNull();
+  });
+
+  it('mantém o ponto de inclusão dos destaques para o SSI do Nginx', () => {
+    expect(arquivo('index.html')).toContain(INCLUSAO_DESTAQUES);
   });
 
   it('é leve: nenhum JavaScript no build', () => {

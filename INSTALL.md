@@ -297,6 +297,17 @@ Se a renovação falhar (o `verifica:https` acusa o vencimento próximo):
 2. Confira se o DNS e a porta 80 continuam apontando para a VPS.
 3. Rode o `renew` acima sem `--dry-run`.
 
+### Destaques da landing
+
+A landing mostra os 5 ativos de maior nota da **execução anterior ao dia corrente** (D-1), com até 3 notícias que pesaram em cada nota e o aviso de que não é recomendação de investimento (tarefa 034). O trecho é gerado pelo CLI do banco num volume (`destaques`) e incluído pelo Nginx da landing por SSI: sem rota pública na API e sem JavaScript. Sem arquivo ou sem execução, a página fica sem a seção.
+
+```sh
+# VPS, como deploy: cron diário às 06:00 (horário da VPS); o "hoje" é calculado no fuso de São Paulo
+(crontab -l 2>/dev/null; echo '0 6 * * * $HOME/lista-acoes/infra/scripts/destaques.sh >> $HOME/destaques-cron.log 2>&1') | crontab -
+```
+
+Fora de hora: `infra/scripts/destaques.sh` (ou `... run --rm --no-deps backend node dist/database/cli.js destaques /app/destaques --hoje AAAA-MM-DD`). No DEV, `docker compose -f infra/docker-compose.dev.yml exec backend node -r @babel/register src/database/cli.js destaques /app/destaques`: o Vite da landing inclui o trecho (`DESTAQUES_DIR`); com o seed (032), os sinais fictícios já vêm ligados a notícias fictícias.
+
 ### Backup e restauração
 
 Backup **semanal** do SQLite na VPS e cópia externa **puxada** pelo casa-ratton. Os scripts ficam em `infra/scripts/` e são testados por `npm run test:estrutura`.

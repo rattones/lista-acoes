@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import { configBase } from './vite.base.config.js';
+import { pluginDestaques } from './landing/destaques.js';
 import { pluginPolitica } from './landing/politica.js';
 
 const APP_URL_PADRAO = 'https://app.listadecompras.net';
@@ -20,7 +21,11 @@ export default defineConfig(({ mode }) => {
   return configBase('landing', {
     porta: 8081,
     // O POLICY.md fica na raiz do repositório (no Docker, montado ou copiado ao lado de frontend/).
-    plugins: [pluginPolitica({ arquivo: join(import.meta.dirname, '..', 'POLICY.md') })],
+    plugins: [
+      pluginPolitica({ arquivo: join(import.meta.dirname, '..', 'POLICY.md') }),
+      // DEV: pasta do destaques.html gerado pelo CLI do banco (volume compartilhado com o backend).
+      pluginDestaques({ pasta: env.DESTAQUES_DIR }),
+    ],
     entradas: {
       inicio: join(raiz, 'index.html'),
       privacidade: join(raiz, 'privacidade.html'),

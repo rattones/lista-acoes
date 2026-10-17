@@ -9,7 +9,7 @@ Gerenciador de ações: acompanha o mercado, armazena os dados coletados por age
 - **Agentes coletores** enviam à API os preços diários (Yahoo e Binance, todo dia às 19:30) e as notícias (RSS do Google News e de portais de mercado, todo dia às 12:00) dos ativos monitorados, autenticados por API key.
 - Um **agente de decisão** externo (etapa futura) lê esses dados e grava a nota de cada ativo (1 a 5). A API só armazena e fornece os dados; ela não calcula a nota.
 - O **app** mostra o dashboard, os ativos monitorados e os usuários. O acesso é só por convite: não existe cadastro aberto.
-- A **landing page** apresenta o projeto e leva ao app.
+- A **landing page** apresenta o projeto, mostra os 5 ativos de maior nota do dia anterior (com as notícias que justificam cada nota e o aviso de que não é recomendação de investimento) e leva ao app.
 - **Bots** de compra e venda na XP Investimentos ficam para o fim do projeto.
 
 Situação atual: fundação pronta (monorepo, Docker em DEV e PROD, HTTPS, CI) e executor de migrations do banco. O schema, o CRUD e a autenticação são as próximas etapas ([issues](https://github.com/rattones/lista-acoes/issues) e [projeto](https://github.com/users/rattones/projects/2)).
@@ -329,6 +329,7 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Testes:** `frontend/test/utils.js` tem a API falsa (`criarApiFalsa`, `apiComSessao`) instalada como `fetch` global e `montarApp(rota)`, que monta o app inteiro (Vuetify, router em memória e Pinia).
 - **Tema:** claro e escuro, alternados pela barra superior; o inicial segue a preferência do sistema.
 - **Landing page:** página estática, sem JavaScript, com o que é o projeto, como funciona (coleta → análise → nota → decisão), o aviso de acesso por convite e os links "Entrar" e "Acessar o app", que levam a `VITE_APP_URL/login` (padrão: `https://app.listadecompras.net`). Não tem link de cadastro. Tem metatags de SEO e Open Graph (endereço canônico por `VITE_LANDING_URL`), favicon, `robots.txt`, tema claro e escuro, e nota 100 no Lighthouse (performance, acessibilidade, boas práticas e SEO).
+- **Destaques dos agentes** (tarefa 034): seção com os 5 ativos de maior nota da execução anterior ao dia corrente (D-1), sem inativos ou excluídos e com empate pelo retorno de 1 mês; cada um com a nota (cor de 1 a 5) e até 3 notícias que pesaram na nota (`sinais_noticias`), com link para o veículo (`rel="noopener noreferrer nofollow"`), e o aviso de que as notas não são recomendação de investimento. "Atualizado em DD/MM/AAAA" sempre visível, em destaque depois de 3 dias úteis sem execução. O trecho (`destaques.html`) é gerado por `cli.js destaques <pasta>` (escrita atômica, dados escapados, só classes do CSS) e incluído pelo Nginx por SSI (`ssi_silent_errors`, local interno `/destaques/`); em DEV, pelo plugin `landing/destaques.js` do Vite. Atualização diária pelo cron do `infra/scripts/destaques.sh` (INSTALL).
 - **Política de privacidade** (`/privacidade.html`): gerada no build a partir do `POLICY.md` da raiz por um plugin do Vite (`frontend/landing/politica.js`, com `marked`), então nunca diverge do documento. No DEV, editar o `POLICY.md` recarrega a página. Um teste impede que ela cite tarefas internas ou leve a arquivos `.md`.
 
 ## Agentes coletores
