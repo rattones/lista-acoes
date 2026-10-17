@@ -72,23 +72,3 @@ describe('CLI dos agentes', () => {
     );
   });
 });
-
-describe('agentes ainda sem coleta (036 e 037)', () => {
-  it.each(AGENTES.map((a) => [a.nome, a]))(
-    '%s avisa que ainda não coleta',
-    async (_nome, agente) => {
-      const log = logFalso();
-      expect(await agente.executar({ api: {}, log }, {})).toEqual({
-        ativos: 0,
-        gravados: 0,
-        falhas: 0,
-      });
-      expect(log.registros).toContainEqual(
-        expect.objectContaining({
-          nivel: 'warn',
-          mensagem: expect.stringMatching(/ainda não implementad/),
-        }),
-      );
-    },
-  );
-});

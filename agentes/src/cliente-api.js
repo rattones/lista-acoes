@@ -62,11 +62,12 @@ function criarClienteApi({ url, chave, timeoutMs = 30000, fetch = globalThis.fet
     post: (caminho, corpo) => requisitar('POST', caminho, corpo),
 
     // POST /v1/<recurso>/lote em partes de até 1000 itens (limite da API), somando o resultado.
-    async enviarLote(caminho, itens) {
+    // tamanho menor quando os itens são grandes (o corpo vai até 1 MB).
+    async enviarLote(caminho, itens, { tamanho = TAMANHO_LOTE } = {}) {
       const total = { inseridos: 0, atualizados: 0 };
-      for (let inicio = 0; inicio < itens.length; inicio += TAMANHO_LOTE) {
+      for (let inicio = 0; inicio < itens.length; inicio += tamanho) {
         const { inseridos, atualizados } = await requisitar('POST', caminho, {
-          itens: itens.slice(inicio, inicio + TAMANHO_LOTE),
+          itens: itens.slice(inicio, inicio + tamanho),
         });
         total.inseridos += inseridos;
         total.atualizados += atualizados;
