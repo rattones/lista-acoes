@@ -252,6 +252,16 @@ Monta o cadastro de um ativo a partir do link da página dele no Google Finance 
 - **Cliente HTTP** (`src/wrapper/cliente-http.js`): timeout por tentativa (`WRAPPER_TIMEOUT_MS`), até `WRAPPER_TENTATIVAS` tentativas com backoff exponencial em erro de rede, 429 e 5xx, cache em memória de `WRAPPER_CACHE_SEGUNDOS` para respostas 2xx e `User-Agent` configurável (`WRAPPER_USER_AGENT`).
 - **Testes:** usam respostas reais gravadas em `backend/test/fixtures/wrapper/` e não vão à rede.
 
+### Dashboard
+
+Leitura consolidada para o app (tarefa 025). Só usuários logados (admin e leitor); uma API key recebe 403. Registros excluídos logicamente ficam de fora.
+
+| Rota                                                            | O que faz                                                                                                                                                                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/dashboard/resumo`                                      | `{ execucao: { id, data_execucao } \| null, ativos }`: cada ativo da última execução com nota, `variacao_nota` (em relação à execução anterior), leituras, tendência, fechamento, moeda e os indicadores |
+| `GET /v1/dashboard/historico?ativo_id=N&de=AAAA-MM-DD`          | `{ precos: [{ data, fechamento }], notas: [{ data_execucao, data_preco, nota, noticias, grafico }] }`; sem `de`, todo o histórico; ativo inexistente → 404                                               |
+| `GET /v1/dashboard/noticias?ativos=1,2&de=AAAA-MM-DD&limite=10` | Mais recentes primeiro (limite padrão 10, máximo 50); com `ativos`, as desses ativos e as gerais (sem ativo)                                                                                             |
+
 ## Frontend (app e landing page)
 
 Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com builds separados, cada um servido pelo seu host:
@@ -273,24 +283,25 @@ Vue 3 + Vite + Vuetify + Pinia + Vue Router, em JavaScript. São dois alvos com 
 - **Sessão** (store `auth`, `app/src/stores/auth.js`): `login`, `logout`, `renovar` e `iniciar`. O token de acesso fica só em memória, nunca em `localStorage`; ao abrir o app, `iniciar()` retoma a sessão pelo refresh token (cookie `httpOnly`). O token é renovado sozinho um minuto antes de expirar, e renovações simultâneas viram um pedido só.
 - **Rotas:**
 
-  | Rota                         | Acesso   | Tela                                                                          |
-  | ---------------------------- | -------- | ----------------------------------------------------------------------------- |
-  | `/login`                     | Pública  | Login (`?volta=` leva de volta à página pedida)                               |
-  | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                                    |
-  | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito)                   |
-  | `/cadastro#c=<token>`        | Pública  | Cadastro por convite: e-mail do convite só confirmado (`?c=` também é aceito) |
-  | `/`                          | Logado   | Dashboard (cards, gráfico, indicadores e notícias na tarefa 025)              |
-  | `/ativos`                    | Logado   | Lista de ativos (leitor só vê)                                                |
-  | `/ativos/novo`               | Só admin | Inclusão por link do Google Finance ou do Yahoo Finance                       |
-  | `/ativos/:id`                | Logado   | Exibir; admin edita, atualiza da fonte e exclui                               |
-  | `/perfil`                    | Logado   | Nome, troca de senha e exclusão da própria conta (e-mail só leitura)          |
-  | `/usuarios`                  | Só admin | Lista, convites, ativar/desativar, excluir e restaurar                        |
-  | `/usuarios/:id`              | Só admin | Editar nome, papel e status (e-mail só leitura)                               |
-  | `/api-keys`                  | Só admin | API keys dos agentes: lista, nova chave (exibida uma vez) e revogação         |
-  | qualquer outra               | Pública  | 404, mantendo o endereço digitado                                             |
+  | Rota                         | Acesso   | Tela                                                                           |
+  | ---------------------------- | -------- | ------------------------------------------------------------------------------ |
+  | `/login`                     | Pública  | Login (`?volta=` leva de volta à página pedida)                                |
+  | `/recuperar-senha`           | Pública  | Pede o link de redefinição                                                     |
+  | `/redefinir-senha#t=<token>` | Pública  | Valida o link e define a nova senha (`?t=` também é aceito)                    |
+  | `/cadastro#c=<token>`        | Pública  | Cadastro por convite: e-mail do convite só confirmado (`?c=` também é aceito)  |
+  | `/`                          | Logado   | Dashboard: cards, gráfico de preço + nota, indicadores e notícias, com filtros |
+  | `/ativos`                    | Logado   | Lista de ativos (leitor só vê)                                                 |
+  | `/ativos/novo`               | Só admin | Inclusão por link do Google Finance ou do Yahoo Finance                        |
+  | `/ativos/:id`                | Logado   | Exibir; admin edita, atualiza da fonte e exclui                                |
+  | `/perfil`                    | Logado   | Nome, troca de senha e exclusão da própria conta (e-mail só leitura)           |
+  | `/usuarios`                  | Só admin | Lista, convites, ativar/desativar, excluir e restaurar                         |
+  | `/usuarios/:id`              | Só admin | Editar nome, papel e status (e-mail só leitura)                                |
+  | `/api-keys`                  | Só admin | API keys dos agentes: lista, nova chave (exibida uma vez) e revogação          |
+  | qualquer outra               | Pública  | 404, mantendo o endereço digitado                                              |
 
   Sem login, rota privada → `/login?volta=<rota>`; leitor em rota de admin → dashboard. O app usa histórico HTML5, então o servidor precisa devolver o `index.html` para rotas desconhecidas.
 
+- **Dashboard** (`/`): cards da última execução (nota de 1 vermelho a 5 verde, variação, fechamento, tendência, notícias × gráfico e se concordam), da maior nota para a menor; o gráfico (Chart.js) mostra o ativo em foco, com o fechamento em linha e a nota de cada execução em barras (o tooltip traz as leituras); abre no ativo de maior nota e troca ao clicar num card. Abaixo, a tabela de indicadores (IFR14, %B, histograma do MACD, distâncias das MM20/50/200 e retornos), ordenável, com IFR > 70 / < 30 e %B > 1 / < 0 em destaque, e as 10 últimas notícias. Filtros rápidos (ativos, período 1M a Tudo, padrão 1M, e nota mínima) e "Mais filtros" (tipo, bolsa, tendência, leituras, concordam, IFR e %B) valem para cards, tabela e notícias; o período vale também para o gráfico. Todos ficam na query (`?ativos=PETR4,TSLA&periodo=3m&nota=3&foco=PETR4`): recarregar mantém a visão e o link abre a mesma visão; valor inválido é ignorado. No DEV, os dados vêm do `db:seed-dev`.
 - **Ativos:** lista (`v-data-table`) com código, nome, tipo, bolsa, status e a última cotação gravada em `precos_diarios` (uma consulta por ativo, `—` sem cotação), com filtros por tipo e status e busca por código ou nome (sem acento nem caixa). O admin liga e desliga o status pelo switch da linha (`PATCH { status }`, que volta ao valor anterior se a API recusar) e vê e restaura os excluídos. Em "Novo ativo", o admin cola o link da página do ativo (`google.com/finance/quote/...` ou `finance.yahoo.com/quote/...`; outro endereço é recusado sem chamar a API), confere na mesma tela os dados do `pre-visualizar` e a cotação, ajusta o que precisar e inclui. Em `/ativos/:id`, salva só os campos alterados, "Atualizar dados da fonte" refaz a busca e grava os campos do wrapper, e "Excluir" é lógica por padrão ou física com a opção marcada (apaga sinais e cotações do ativo). O leitor vê tudo só para leitura, sem botões de edição.
 - **Meu perfil:** o e-mail aparece desabilitado; o nome é salvo com `PATCH /v1/auth/eu` e atualiza o menu. A troca de senha pede a atual, a nova (mínimo de 10 caracteres) e a confirmação; a API encerra as sessões dos outros aparelhos e devolve uma nova, que o app adota sem sair. "Excluir minha conta" abre um diálogo que explica a exclusão permanente e só habilita o botão com a senha preenchida e `EXCLUIR` digitado; depois de excluir, a sessão local é descartada e o app leva à landing (`VITE_LANDING_URL`). O último admin ativo recebe a mensagem de que precisa promover outro administrador antes.
 - **Usuários** (só admin): lista com papel, status (Ativo, Inativo, Bloqueado pelas tentativas de login, Excluído) e último login; ativar/desativar, editar, excluir (lógica ou, marcando a opção, física, que apaga também o que o usuário criou) e restaurar com "Mostrar excluídos". O admin não se desativa, não se exclui e não muda o próprio papel por essas telas (para isso há o perfil, tarefa 022).

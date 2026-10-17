@@ -6,6 +6,7 @@ import { opcoesPinoHttp } from './comum/log';
 import { validarConfig } from './config/configuracao';
 import { AtivosModule } from './ativos/ativos.module';
 import { AuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DatabaseModule } from './database/database.module';
 import { ExecucoesModule } from './execucoes/execucoes.module';
 import { HealthController } from './health/health.controller';
@@ -38,6 +39,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     NoticiasModule,
     UsuariosModule,
     AgentesTokensModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })

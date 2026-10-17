@@ -56,6 +56,7 @@ Todas as mudanças relevantes do projeto são registradas aqui, no formato [Keep
 
 ### Adicionado
 
+- Dashboard (tarefa 025): rotas `GET /v1/dashboard/resumo`, `/historico` e `/noticias` (só leitura, usuários logados, sem API key) e a tela inicial do app com cards do resumo atual, gráfico de preço (linha) e nota (barras) do ativo em foco com Chart.js (`chart.js` + `vue-chartjs`), tabela de indicadores com destaques de IFR e %B, últimas notícias e filtros rápidos e avançados guardados na URL. O DEV precisa de `up --build` por causa das novas dependências.
 - `npm run db:seed-dev -w backend` (`cli.js seed-dev`): dados fictícios do DEV para o dashboard, determinísticos e marcados como `seed` (preços, execuções, sinais com indicadores calculados dos preços e notícias); `--limpar` só apaga; recusa em produção (tarefa 032).
 - App: switch "Mostrar revogadas (N)" na tela de API keys; por padrão a lista mostra só as ativas, e a lista vazia orienta a ligar o switch quando só há revogadas (tarefa 031).
 - Backup do SQLite (tarefa 028): comandos `backup` e `verificar` no CLI do banco (API online do SQLite + `integrity_check`); `infra/scripts/backup.sh` (semanal na VPS, gzip + `.sha256`, retenção de 8, log), `puxar-backup.sh` (cópia externa puxada pelo casa-ratton com chave restrita a leitura, `rrsync -ro`, retenção de 26) e `restaurar-backup.sh` (confere, guarda o banco atual, troca e sobe a API).
