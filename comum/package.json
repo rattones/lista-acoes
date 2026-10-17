@@ -2,11 +2,13 @@
   "name": "@lista-acoes/comum",
   "version": "0.0.0",
   "private": true,
-  "description": "Código compartilhado pela API e pelos agentes (cliente HTTP e URLs das fontes)",
+  "description": "Código compartilhado pela API e pelos agentes (cliente HTTP, URLs das fontes, indicadores e fórmula da nota)",
   "type": "commonjs",
   "exports": {
     "./cliente-http": "./src/cliente-http.js",
-    "./fontes": "./src/fontes.js"
+    "./fontes": "./src/fontes.js",
+    "./indicadores": "./src/indicadores.js",
+    "./nota": "./src/nota.js"
   },
   "scripts": {
     "test": "jest"
