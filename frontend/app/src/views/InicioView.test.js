@@ -118,6 +118,48 @@ describe('dashboard (/)', () => {
       await vi.waitFor(() => expect(router.currentRoute.value.query.foco).toBe('CSCO'));
     });
 
+    // Tarefa 038: clicar no card em foco desfaz o foco.
+    it('clicar no card em foco desfaz o foco: sem destaque, sem gráfico e foco=nenhum', async () => {
+      const falsa = abrirApi();
+      const { wrapper, router } = await montarApp('/');
+      const chamadas = falsa.chamou('GET /v1/dashboard/historico').length;
+      await clicar(wrapper, 'card-PETR4');
+      expect(wrapper.findAll('.em-foco')).toHaveLength(0);
+      expect(wrapper.find('[data-teste="grafico"]').exists()).toBe(false);
+      expect(wrapper.find('[data-teste="sem-foco"]').text()).toMatch(
+        /Clique num card para ver o gráfico/,
+      );
+      expect(falsa.chamou('GET /v1/dashboard/historico')).toHaveLength(chamadas);
+      await vi.waitFor(() => expect(router.currentRoute.value.query.foco).toBe('nenhum'));
+
+      await clicar(wrapper, 'card-TSLA');
+      expect(wrapper.find('[data-teste="card-TSLA"]').classes()).toContain('em-foco');
+      expect(ultima(falsa, 'historico').get('ativo_id')).toBe('3');
+      await vi.waitFor(() => expect(router.currentRoute.value.query.foco).toBe('TSLA'));
+    });
+
+    it('um card escolhido e clicado de novo também perde o foco', async () => {
+      abrirApi();
+      const { wrapper } = await montarApp('/');
+      await clicar(wrapper, 'card-CSCO');
+      await clicar(wrapper, 'card-CSCO');
+      expect(wrapper.findAll('.em-foco')).toHaveLength(0);
+      expect(wrapper.find('[data-teste="sem-foco"]').exists()).toBe(true);
+    });
+
+    it('/?foco=nenhum abre sem foco, e mudar os filtros não foca ninguém', async () => {
+      const falsa = abrirApi();
+      const { wrapper } = await montarApp('/?foco=nenhum');
+      expect(wrapper.findAll('.em-foco')).toHaveLength(0);
+      expect(wrapper.find('[data-teste="sem-foco"]').exists()).toBe(true);
+      expect(falsa.chamou('GET /v1/dashboard/historico')).toHaveLength(0);
+
+      await clicar(wrapper, 'nota-4');
+      await clicar(wrapper, 'periodo-3m');
+      expect(wrapper.findAll('.em-foco')).toHaveLength(0);
+      expect(falsa.chamou('GET /v1/dashboard/historico')).toHaveLength(0);
+    });
+
     it('ativo sem preço no período: gráfico vazio com aviso', async () => {
       abrirApi({ historico: () => ({ precos: [], notas: [] }) });
       const { wrapper } = await montarApp('/');

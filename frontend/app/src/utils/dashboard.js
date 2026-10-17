@@ -37,6 +37,9 @@ export const PERIODOS = [
 ];
 export const PERIODO_PADRAO = '1m';
 
+// foco desfeito pelo usuário (tarefa 038): nenhum ativo em foco, também na query (?foco=nenhum).
+export const SEM_FOCO = 'nenhum';
+
 // Cores da nota: 1 vermelho → 5 verde.
 export const CORES_NOTA = { 1: '#d32f2f', 2: '#f57c00', 3: '#f9a825', 4: '#7cb342', 5: '#2e7d32' };
 
@@ -114,7 +117,7 @@ export function lerFiltros(query, linhas) {
   if (Number.isInteger(nota) && nota >= 1 && nota <= 5) filtros.nota = nota;
 
   const foco = textoDaQuery(query.foco);
-  if (codigos.has(foco)) filtros.foco = foco;
+  if (foco === SEM_FOCO || codigos.has(foco)) filtros.foco = foco;
 
   for (const campo of ['bolsa', 'tendencia']) {
     const valor = textoDaQuery(query[campo]);
